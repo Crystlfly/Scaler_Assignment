@@ -9,7 +9,20 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mock available members/labels (in a real app, these would come from the board fetch)
+  // New states for inline editing
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editDescContent, setEditDescContent] = useState('');
+  
+  const [isAddingChecklist, setIsAddingChecklist] = useState(false);
+  const [newChecklistTitle, setNewChecklistTitle] = useState('Tasks');
+  
+  const [addingItemId, setAddingItemId] = useState(null);
+  const [newItemContent, setNewItemContent] = useState('');
+
+  const [showMembers, setShowMembers] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
+
+  // Mock available members/labels
   const availableLabels = [
     { id: 'l-bug', title: 'Bug', color: '#ef5350' },
     { id: 'l-feature', title: 'Feature', color: '#66bb6a' },
@@ -23,9 +36,6 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
   ];
 
   const fetchCard = async () => {
-    // For simplicity, we refetch the board and find our card, or we could add a GET /api/cards/:id route to the backend.
-    // Wait, the backend doesn't have a GET /api/cards/:id route in our index.js!
-    // But we pass the deeply nested board data down anyway. Let's just fetch the whole board and extract the card.
     try {
       setLoading(true);
       const res = await axios.get(`${API_URL}/boards`);
@@ -43,6 +53,10 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
           }
       }
       setCard(foundCard);
+      // Pre-fill editable fields
+      if (foundCard) {
+          setEditDescContent(foundCard.description || "");
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -54,7 +68,6 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
     fetchCard();
   }, [cardId]);
 
-  // Handle outside click
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -62,27 +75,31 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
   };
 
   const updateDescription = async () => {
-      const desc = prompt("Enter new description:", card?.description || "");
-      if (desc !== null) {
-          await axios.put(`${API_URL}/cards/${card.id}`, { description: desc });
+      setIsEditingDescription(false);
+      if (editDescContent.trim() !== card.description) {
+          await axios.put(`${API_URL}/cards/${card.id}`, { description: editDescContent });
           fetchCard();
           refreshBoard();
       }
   }
 
-  const addChecklist = async () => {
-      const title = prompt("Checklist title:", "Tasks");
-      if (title) {
-          await axios.post(`${API_URL}/cards/${card.id}/checklists`, { title });
+  const addChecklist = async (e) => {
+      e?.preventDefault();
+      setIsAddingChecklist(false);
+      if (newChecklistTitle.trim()) {
+          await axios.post(`${API_URL}/cards/${card.id}/checklists`, { title: newChecklistTitle });
+          setNewChecklistTitle('Tasks');
           fetchCard();
           refreshBoard();
       }
   }
 
-  const addChecklistItem = async (checklistId) => {
-      const content = prompt("Add item:");
-      if (content) {
-          await axios.post(`${API_URL}/checklists/${checklistId}/items`, { content });
+  const addChecklistItem = async (checklistId, e) => {
+      e?.preventDefault();
+      setAddingItemId(null);
+      if (newItemContent.trim()) {
+          await axios.post(`${API_URL}/checklists/${checklistId}/items`, { content: newItemContent });
+          setNewItemContent('');
           fetchCard();
           refreshBoard();
       }
@@ -94,34 +111,23 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
       refreshBoard();
   }
 
-  const addMember = async () => {
-      // Mock random member assignment for brevity
-      const member = availableMembers[Math.floor(Math.random() * availableMembers.length)];
+  const assignMember = async (userId) => {
       try {
-          // Backend expects an existing DB user. 
-          // If running the seed, 'demo@example.com' exists. We need to fetch users to get real IDs.
-          // Fallback: prompt for user ID.
-          const userId = prompt("Enter User ID to assign (must exist in DB). Check network requests for board members or run seed.");
-          if (userId) {
-              await axios.post(`${API_URL}/cards/${card.id}/members`, { userId });
-              fetchCard();
-              refreshBoard();
-          }
-      } catch (e) { alert("Failed to add member. Ensure User ID is valid."); }
+          await axios.post(`${API_URL}/cards/${card.id}/members`, { userId });
+          setShowMembers(false);
+          fetchCard();
+          refreshBoard();
+      } catch (e) { alert("Failed to add member."); }
   }
 
-  const addLabel = async () => {
-      // Prompt for a label ID that exists we created in seed.
-      const labelId = prompt("Enter Label ID to assign. Check network requests for board labels.");
-      if (labelId) {
-          try {
-              await axios.post(`${API_URL}/cards/${card.id}/labels`, { labelId });
-              fetchCard();
-              refreshBoard();
-          } catch (e) { alert("Failed to add label. Ensure Label ID is valid."); }
-      }
+  const assignLabel = async (labelId) => {
+      try {
+          await axios.post(`${API_URL}/cards/${card.id}/labels`, { labelId });
+          setShowLabels(false);
+          fetchCard();
+          refreshBoard();
+      } catch (e) { alert("Failed to add label."); }
   }
-
 
   if (loading || !card) {
     return createPortal(
@@ -165,15 +171,27 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
                    {card.members?.length > 0 && (
                        <div>
                            <h3 className="text-xs font-semibold text-[#5e6c84] mb-2">Members</h3>
-                           <div className="flex gap-1">
+                           <div className="flex gap-1 relative">
                                {card.members.map(member => (
                                    <div key={member.id} className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-sm cursor-pointer hover:bg-blue-700" title={member.user.name}>
                                        {member.user.name.charAt(0).toUpperCase()}
                                    </div>
                                ))}
-                               <button onClick={addMember} className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
+                               <button onClick={() => {setShowMembers(!showMembers); setShowLabels(false);}} className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
                                    <FiPlus size={16} />
                                </button>
+                               {/* Inline member picker mock */}
+                               {showMembers && (
+                                   <div className="absolute top-10 left-0 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-10 text-sm">
+                                       <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Members</div>
+                                       {availableMembers.map(m => (
+                                           <div key={m.id} onClick={() => assignMember(m.id)} className="flex items-center gap-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
+                                               <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">{m.name.charAt(0)}</div>
+                                               <span>{m.name}</span>
+                                           </div>
+                                       ))}
+                                   </div>
+                               )}
                            </div>
                        </div>
                    )}
@@ -181,7 +199,7 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
                    {card.labels?.length > 0 && (
                        <div>
                            <h3 className="text-xs font-semibold text-[#5e6c84] mb-2">Labels</h3>
-                           <div className="flex flex-wrap gap-1">
+                           <div className="flex flex-wrap gap-1 relative">
                                {card.labels.map(cardLabel => (
                                    <div 
                                       key={cardLabel.id} 
@@ -191,9 +209,20 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
                                        {cardLabel.label.title || "Label"}
                                    </div>
                                ))}
-                               <button onClick={addLabel} className="h-8 px-3 rounded-sm bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
+                               <button onClick={() => {setShowLabels(!showLabels); setShowMembers(false);}} className="h-8 px-3 rounded-sm bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
                                    <FiPlus size={16} />
                                </button>
+                               {/* Inline label picker mock */}
+                               {showLabels && (
+                                   <div className="absolute top-10 left-0 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-10 text-sm space-y-1 mt-1">
+                                       <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Labels</div>
+                                       {availableLabels.map(l => (
+                                           <div key={l.id} onClick={() => assignLabel(l.id)} className="px-2 py-1.5 rounded flex items-center justify-between text-white font-medium cursor-pointer" style={{backgroundColor: l.color}}>
+                                               {l.title} <FiPlus size={14}/>
+                                           </div>
+                                       ))}
+                                   </div>
+                               )}
                            </div>
                        </div>
                    )}
@@ -206,20 +235,42 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
               <div className="flex-1">
                   <div className="flex items-center justify-between mb-3">
                      <h3 className="text-lg font-semibold">Description</h3>
-                     {card.description && (
-                         <button onClick={updateDescription} className="px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors">
+                     {card.description && !isEditingDescription && (
+                         <button onClick={() => setIsEditingDescription(true)} className="px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors">
                              Edit
                          </button>
                      )}
                   </div>
-                  {card.description ? (
-                      <div className="text-sm cursor-pointer" onClick={updateDescription}>
-                          {card.description}
+
+                  {isEditingDescription ? (
+                      <div className="flex flex-col gap-2">
+                          <textarea 
+                              autoFocus
+                              value={editDescContent}
+                              onChange={(e) => setEditDescContent(e.target.value)}
+                              placeholder="Add a more detailed description..."
+                              className="w-full p-2 text-sm rounded-lg border-2 border-blue-500 shadow-sm resize-none focus:outline-none text-[#172b4d]"
+                              rows={4}
+                          />
+                          <div className="flex items-center gap-2">
+                              <button onClick={updateDescription} className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-4 py-1.5 rounded-sm text-sm font-medium transition-colors">
+                                  Save
+                              </button>
+                              <button onClick={() => {setIsEditingDescription(false); setEditDescContent(card.description || "");}} className="px-3 py-1.5 hover:bg-gray-200 rounded-sm text-gray-600 transition-colors">
+                                  Cancel
+                              </button>
+                          </div>
                       </div>
                   ) : (
-                      <div onClick={updateDescription} className="bg-[#091e420f] hover:bg-[#091e4214] rounded-sm p-3 min-h-[56px] text-sm text-[#172b4d] cursor-pointer transition-colors font-medium">
-                          Add a more detailed description...
-                      </div>
+                      card.description ? (
+                          <div className="text-sm cursor-pointer" onClick={() => setIsEditingDescription(true)}>
+                              {card.description}
+                          </div>
+                      ) : (
+                          <div onClick={() => setIsEditingDescription(true)} className="bg-[#091e420f] hover:bg-[#091e4214] rounded-sm p-3 min-h-[56px] text-sm text-[#172b4d] cursor-pointer transition-colors font-medium">
+                              Add a more detailed description...
+                          </div>
+                      )
                   )}
               </div>
            </div>
@@ -269,9 +320,36 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
                                ))}
                            </div>
 
-                           <button onClick={() => addChecklistItem(checklist.id)} className="px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors mt-2">
-                               Add an item
-                           </button>
+                           {addingItemId === checklist.id ? (
+                               <form onSubmit={(e) => addChecklistItem(checklist.id, e)} className="mt-2 space-y-2">
+                                   <textarea 
+                                      autoFocus
+                                      value={newItemContent}
+                                      onChange={(e) => setNewItemContent(e.target.value)}
+                                      placeholder="Add an item"
+                                      className="w-full p-2 text-sm rounded border-2 border-blue-500 shadow-sm resize-none focus:outline-none"
+                                      rows={2}
+                                      onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && !e.shiftKey) {
+                                              e.preventDefault();
+                                              addChecklistItem(checklist.id, e);
+                                          }
+                                      }}
+                                   />
+                                   <div className="flex items-center gap-2">
+                                       <button type="submit" className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors">
+                                           Add
+                                       </button>
+                                       <button type="button" onClick={() => {setAddingItemId(null); setNewItemContent('');}} className="px-2 py-1.5 text-gray-500 hover:text-gray-800 transition-colors">
+                                           Cancel
+                                       </button>
+                                   </div>
+                               </form>
+                           ) : (
+                               <button onClick={() => setAddingItemId(checklist.id)} className="px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors mt-2">
+                                   Add an item
+                               </button>
+                           )}
                        </div>
                    </div>
                )
@@ -283,16 +361,57 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle }) => {
         <div className="w-[192px] p-6 pl-2 pt-16 space-y-4 fixed right-0 mr-[-16px] md:relative md:mr-0 z-0">
             <div>
                 <h4 className="text-xs font-semibold text-[#5e6c84] mb-2 uppercase">Add to card</h4>
-                <div className="space-y-2">
-                    <button onClick={addMember} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
+                <div className="space-y-2 relative">
+                    <button onClick={() => {setShowMembers(!showMembers); setShowLabels(false); setIsAddingChecklist(false);}} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
                         <FiUser size={16}/> Members
                     </button>
-                    <button onClick={addLabel} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
+                    {/* Inline member picker mock */}
+                    {showMembers && (
+                       <div className="absolute top-8 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-20 text-sm">
+                           <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Members</div>
+                           {availableMembers.map(m => (
+                               <div key={m.id} onClick={() => assignMember(m.id)} className="flex items-center gap-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
+                                   <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">{m.name.charAt(0)}</div>
+                                   <span>{m.name}</span>
+                               </div>
+                           ))}
+                       </div>
+                    )}
+
+
+                    <button onClick={() => {setShowLabels(!showLabels); setShowMembers(false); setIsAddingChecklist(false);}} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
                         <FiTag size={16}/> Labels
                     </button>
-                    <button onClick={addChecklist} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
-                        <FiCheckSquare size={16}/> Checklist
-                    </button>
+                    {/* Inline label picker mock */}
+                    {showLabels && (
+                       <div className="absolute top-16 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-20 text-sm space-y-1 mt-1">
+                           <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Labels</div>
+                           {availableLabels.map(l => (
+                               <div key={l.id} onClick={() => assignLabel(l.id)} className="px-2 py-1.5 rounded flex items-center justify-between text-white font-medium cursor-pointer" style={{backgroundColor: l.color}}>
+                                   {l.title} <FiPlus size={14}/>
+                               </div>
+                           ))}
+                       </div>
+                    )}
+
+
+                    {isAddingChecklist ? (
+                        <form onSubmit={addChecklist} className="bg-white p-2 rounded shadow-md border absolute top-24 left-0 xl:right-full xl:left-auto xl:mr-2 w-48 z-20">
+                            <h4 className="text-xs font-semibold text-gray-500 mb-2 text-center border-b pb-2">Add Checklist</h4>
+                            <input 
+                                autoFocus
+                                type="text"
+                                value={newChecklistTitle}
+                                onChange={(e) => setNewChecklistTitle(e.target.value)}
+                                className="w-full px-2 py-1 mb-2 rounded border-2 border-blue-500 focus:outline-none text-sm"
+                            />
+                            <button type="submit" className="bg-[#0c66e4] text-white w-full py-1 rounded text-sm font-medium">Add</button>
+                        </form>
+                    ) : (
+                        <button onClick={() => {setIsAddingChecklist(true); setShowLabels(false); setShowMembers(false);}} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
+                            <FiCheckSquare size={16}/> Checklist
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

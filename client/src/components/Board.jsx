@@ -10,6 +10,8 @@ const API_URL = 'http://localhost:5000/api';
 const Board = () => {
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAddingList, setIsAddingList] = useState(false);
+  const [newListTitle, setNewListTitle] = useState('');
 
   useEffect(() => {
     const fetchBoard = async () => {
@@ -103,14 +105,18 @@ const Board = () => {
     }
   };
 
-  const addList = async () => {
-    const title = prompt("Enter list title:");
-    if (!title) return;
+  const addList = async (e) => {
+    e?.preventDefault();
+    if (!newListTitle.trim()) {
+        setIsAddingList(false);
+        return;
+    }
 
     try {
-      await axios.post(`${API_URL}/lists`, { title, boardId: board.id });
-      const boardRes = await axios.get(`${API_URL}/boards/${board.id}`);
-      setBoard(boardRes.data);
+      await axios.post(`${API_URL}/lists`, { title: newListTitle, boardId: board.id });
+      setNewListTitle('');
+      setIsAddingList(false);
+      refreshBoard();
     } catch (error) {
       console.error("Failed to add list:", error);
     }
@@ -162,13 +168,37 @@ const Board = () => {
               ))}
               {provided.placeholder}
               
-              {/* Add List Button */}
-              <button 
-                onClick={addList}
-                className="bg-[#ffffff3d] hover:bg-[#ffffff29] transition-colors rounded-xl w-[272px] shrink-0 p-3 text-white shadow-sm font-medium text-[14px] flex items-center gap-1 text-left"
-              >
-                <FiPlus size={18} /> Add another list
-              </button>
+              {/* Add List Form/Button */}
+              {isAddingList ? (
+                  <form 
+                    onSubmit={addList}
+                    className="bg-[#f1f2f4] rounded-xl w-[272px] shrink-0 p-3 shadow-sm flex flex-col gap-2 relative h-fit"
+                  >
+                     <input 
+                        autoFocus
+                        type="text"
+                        value={newListTitle}
+                        onChange={(e) => setNewListTitle(e.target.value)}
+                        placeholder="Enter list title..."
+                        className="w-full px-3 py-1.5 rounded-sm border-2 border-transparent focus:border-blue-500 focus:outline-none text-sm text-[#172b4d]"
+                     />
+                     <div className="flex items-center gap-2">
+                         <button type="submit" className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors">
+                             Add list
+                         </button>
+                         <button type="button" onClick={() => {setIsAddingList(false); setNewListTitle('');}} className="p-1.5 text-gray-500 hover:text-gray-800 transition-colors">
+                             ✕
+                         </button>
+                     </div>
+                  </form>
+              ) : (
+                  <button 
+                    onClick={() => setIsAddingList(true)}
+                    className="bg-[#ffffff3d] hover:bg-[#ffffff29] transition-colors rounded-xl w-[272px] shrink-0 p-3 text-white shadow-sm font-medium text-[14px] flex items-center gap-1 text-left h-fit"
+                  >
+                    <FiPlus size={18} /> Add another list
+                  </button>
+              )}
             </div>
           )}
         </Droppable>
