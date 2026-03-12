@@ -59,9 +59,22 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
             onClick={() => setIsModalOpen(true)}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
-            className={`bg-white rounded-lg p-2.5 mb-2 shrink-0 group relative cursor-pointer shadow-[0_1px_1px_#091e4240] ${snapshot.isDragging ? 'shadow-lg rotate-2 z-50' : 'hover:outline-2 outline-blue-500 hover:bg-[#f4f5f7]'
+            className={`bg-white rounded-lg mb-2 shrink-0 group relative cursor-pointer shadow-[0_1px_1px_#091e4240] flex flex-col overflow-hidden ${snapshot.isDragging ? 'shadow-lg rotate-2 z-50' : 'hover:outline-2 outline-blue-500 hover:bg-[#f4f5f7]'
               }`}
           >
+            {/* Cover Image/Color */}
+            {card.cover && (
+                <div 
+                    className={`w-full shrink-0 bg-cover bg-center bg-no-repeat ${card.cover.startsWith('http') ? 'h-32' : 'h-8'}`}
+                    style={{
+                        backgroundColor: card.cover.startsWith('#') ? card.cover : undefined,
+                        backgroundImage: card.cover.startsWith('http') ? `url('${card.cover}')` : undefined
+                    }}
+                />
+            )}
+
+            {/* Inner Content Padding Wrapper */}
+            <div className="p-2.5">
             {/* Deletion Loading Overlay */}
             {isDeletingLoading && (
               <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center rounded-lg">
@@ -135,6 +148,7 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
                 )}
               </div>
             )}
+            </div>
           </div>
 
           {isModalOpen && (

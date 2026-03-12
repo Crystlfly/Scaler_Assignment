@@ -1,21 +1,26 @@
 import React from 'react';
-import { FiUser, FiTag, FiCheckSquare, FiClock, FiPlus } from 'react-icons/fi';
+import { FiUser, FiTag, FiCheckSquare, FiClock, FiPlus, FiImage } from 'react-icons/fi';
 
 const ModalSidebar = ({
     card,
     showMembers, setShowMembers,
     showLabels, setShowLabels,
     showDatePicker, setShowDatePicker,
+    showCover, setShowCover,
     isAddingChecklist, setIsAddingChecklist,
     dbUsers, assignMember,
     dbLabels, assignLabel,
     addChecklist, newChecklistTitle, setNewChecklistTitle,
     dueDateInput, setDueDateInput, updateDueDate,
+    updateCover,
     isAddingChecklistLoading,
     isAssigningMemberLoading,
     isAssigningLabelLoading,
-    isUpdatingDueDateLoading
+    isUpdatingDueDateLoading,
+    isUpdatingCoverLoading
 }) => {
+    const predefinedColors = ['#ef5350', '#ff9800', '#4caf50', '#2196f3', '#9c27b0'];
+    const [coverUrlInput, setCoverUrlInput] = React.useState('');
     return (
         <div className="w-[192px] p-6 pl-2 pt-16 space-y-4 fixed right-0 mr-[-16px] md:relative md:mr-0 z-0">
             <div>
@@ -127,6 +132,57 @@ const ModalSidebar = ({
                             </div>
                         )}
                     </div>
+
+                    {/* Cover Button */}
+                    <div className="relative">
+                        <button onClick={() => { setShowCover(!showCover); setShowLabels(false); setShowMembers(false); setShowDatePicker(false); setIsAddingChecklist(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
+                            <FiImage size={16} /> Cover
+                        </button>
+                        {showCover && (
+                            <div className="absolute top-10 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-3 w-64 z-20">
+                                <h4 className="text-xs font-semibold text-gray-500 mb-3 text-center border-b pb-2">Cover</h4>
+                                
+                                <label className="block text-xs font-bold text-[#5e6c84] mb-1">Colors</label>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {predefinedColors.map(color => (
+                                        <button 
+                                            key={color}
+                                            onClick={() => updateCover(color)}
+                                            disabled={isUpdatingCoverLoading}
+                                            className="w-10 h-8 rounded shrink-0 hover:opacity-80 transition-opacity disabled:opacity-50"
+                                            style={{ backgroundColor: color }}
+                                        />
+                                    ))}
+                                </div>
+
+                                <label className="block text-xs font-bold text-[#5e6c84] mb-1">Image URL</label>
+                                <input
+                                    type="text"
+                                    placeholder="https://..."
+                                    value={coverUrlInput}
+                                    onChange={(e) => setCoverUrlInput(e.target.value)}
+                                    className="w-full px-2 py-1.5 mb-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-sm"
+                                    disabled={isUpdatingCoverLoading}
+                                />
+                                <button 
+                                    onClick={() => coverUrlInput.trim() && updateCover(coverUrlInput.trim())}
+                                    disabled={isUpdatingCoverLoading || !coverUrlInput.trim()}
+                                    className="w-full bg-[#0c66e4] hover:bg-[#0055cc] text-white py-1.5 rounded text-sm font-medium transition-colors mb-3 disabled:opacity-50"
+                                >
+                                    Apply Image
+                                </button>
+
+                                <button 
+                                    onClick={() => updateCover(null)}
+                                    disabled={isUpdatingCoverLoading}
+                                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
+                                >
+                                    Remove Cover
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
             </div>
         </div>

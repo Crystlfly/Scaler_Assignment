@@ -41,6 +41,9 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
     const [isAssigningLabelLoading, setIsAssigningLabelLoading] = useState(null);
     const [isRemovingLabelLoading, setIsRemovingLabelLoading] = useState(null);
     const [isUpdatingDueDateLoading, setIsUpdatingDueDateLoading] = useState(false);
+    
+    const [showCover, setShowCover] = useState(false);
+    const [isUpdatingCoverLoading, setIsUpdatingCoverLoading] = useState(false);
 
     const [dbLabels, setDbLabels] = useState([]);
     const [dbUsers, setDbUsers] = useState([]);
@@ -125,16 +128,25 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
         }
     }
 
-    const updateDueDate = async (dateVal) => {
+    const updateDueDate = async (isoDate) => {
         setIsUpdatingDueDateLoading(true);
         try {
-            // Send null if dateVal is empty string
-            await axios.put(`${API_URL}/cards/${card.id}`, { dueDate: dateVal || null });
-            setShowDatePicker(false);
+            await axios.put(`${API_URL}/cards/${card.id}`, { dueDate: isoDate });
             await fetchCard();
             await refreshBoard();
-        } catch (err) { alert("Failed to update due date"); }
+            setShowDatePicker(false);
+        } catch (e) { alert("Failed to update due date."); }
         finally { setIsUpdatingDueDateLoading(false); }
+    }
+
+    const updateCover = async (coverUrlOrHex) => {
+        setIsUpdatingCoverLoading(true);
+        try {
+            await axios.put(`${API_URL}/cards/${card.id}`, { cover: coverUrlOrHex });
+            await fetchCard();
+            await refreshBoard();
+        } catch (e) { alert("Failed to update cover."); }
+        finally { setIsUpdatingCoverLoading(false); }
     }
 
     const addChecklist = async (e) => {
@@ -251,18 +263,29 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
             className="fixed inset-0 z-[100] bg-black/60 flex items-start justify-center pt-16 pb-16 overflow-y-auto font-[Inter,-apple-system,sans-serif]"
             onClick={handleOverlayClick}
         >
-            <div className="bg-[#f4f5f7] rounded-xl w-full max-w-3xl min-h-[500px] relative text-[#172b4d] flex">
-
+            <div className="bg-[#f4f5f7] rounded-xl w-full max-w-3xl min-h-[500px] relative text-[#172b4d] flex flex-col">
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 text-gray-500 hover:bg-gray-200 rounded-full transition-colors z-10"
+                    className={`absolute top-4 right-4 p-2 rounded-full transition-colors z-10 ${card.cover ? 'text-white hover:bg-black/20 bg-black/10' : 'text-gray-500 hover:bg-gray-200'}`}
                 >
                     <FiX size={20} />
                 </button>
 
-                {/* Main Content Area */}
-                <div className="flex-1 p-6 pr-4">
+                {/* Optional Cover Block */}
+                {card.cover && (
+                    <div 
+                        className="w-full h-32 shrink-0 bg-cover bg-center bg-no-repeat rounded-t-xl"
+                        style={{
+                            backgroundColor: card.cover.startsWith('#') ? card.cover : undefined,
+                            backgroundImage: card.cover.startsWith('http') ? `url('${card.cover}')` : undefined
+                        }}
+                    ></div>
+                )}
+
+                <div className="flex flex-1">
+                    {/* Main Content Area */}
+                    <div className="flex-1 p-6 pr-4">
 
                     {/* Header Section */}
                     <div className="flex items-start gap-4 mb-8">
@@ -348,21 +371,25 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                 </div>
 
                 {/* Sidebar Actions */}
-                <ModalSidebar
-                    card={card}
-                    showMembers={showMembers} setShowMembers={setShowMembers}
-                    showLabels={showLabels} setShowLabels={setShowLabels}
-                    showDatePicker={showDatePicker} setShowDatePicker={setShowDatePicker}
-                    isAddingChecklist={isAddingChecklist} setIsAddingChecklist={setIsAddingChecklist}
-                    dbUsers={dbUsers} assignMember={assignMember}
-                    dbLabels={dbLabels} assignLabel={assignLabel}
-                    addChecklist={addChecklist} newChecklistTitle={newChecklistTitle} setNewChecklistTitle={setNewChecklistTitle}
-                    isAddingChecklistLoading={isAddingChecklistLoading}
-                    dueDateInput={dueDateInput} setDueDateInput={setDueDateInput} updateDueDate={updateDueDate}
-                    isAssigningMemberLoading={isAssigningMemberLoading}
-                    isAssigningLabelLoading={isAssigningLabelLoading}
-                    isUpdatingDueDateLoading={isUpdatingDueDateLoading}
-                />
+                    <ModalSidebar
+                        card={card}
+                        showMembers={showMembers} setShowMembers={setShowMembers}
+                        showLabels={showLabels} setShowLabels={setShowLabels}
+                        showDatePicker={showDatePicker} setShowDatePicker={setShowDatePicker}
+                        showCover={showCover} setShowCover={setShowCover}
+                        isAddingChecklist={isAddingChecklist} setIsAddingChecklist={setIsAddingChecklist}
+                        dbUsers={dbUsers} assignMember={assignMember}
+                        dbLabels={dbLabels} assignLabel={assignLabel}
+                        addChecklist={addChecklist} newChecklistTitle={newChecklistTitle} setNewChecklistTitle={setNewChecklistTitle}
+                        dueDateInput={dueDateInput} setDueDateInput={setDueDateInput} updateDueDate={updateDueDate}
+                        updateCover={updateCover}
+                        isAddingChecklistLoading={isAddingChecklistLoading}
+                        isAssigningMemberLoading={isAssigningMemberLoading}
+                        isAssigningLabelLoading={isAssigningLabelLoading}
+                        isUpdatingDueDateLoading={isUpdatingDueDateLoading}
+                        isUpdatingCoverLoading={isUpdatingCoverLoading}
+                    />
+                </div>
             </div>
         </div>,
         document.body
