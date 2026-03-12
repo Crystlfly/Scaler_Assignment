@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import axios from 'axios';
 import { BiRightArrowAlt } from 'react-icons/bi';
-import { FiClock, FiCheckSquare } from 'react-icons/fi';
+import { FiClock, FiCheckSquare, FiTrash2 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import CardModal from './CardModal';
+import ConfirmModal from './ModalComponents/ConfirmModal';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -12,21 +13,25 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeletingLoading, setIsDeletingLoading] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const deleteCard = async (e) => {
+  const deleteCard = (e) => {
     e.stopPropagation();
-    if (window.confirm(`Delete card '${card.title}'?`)) {
-      setIsDeletingLoading(true);
-      try {
-        await axios.delete(`${API_URL}/cards/${card.id}`);
-        await refreshBoard();
-      } catch (error) {
-        console.error("Failed to delete card:", error);
-      } finally {
-        setIsDeletingLoading(false);
-      }
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteCard = async () => {
+    setIsDeletingLoading(true);
+    try {
+      await axios.delete(`${API_URL}/cards/${card.id}`);
+      await refreshBoard();
+    } catch (error) {
+      console.error("Failed to delete card:", error);
+    } finally {
+      setIsDeletingLoading(false);
+      setIsDeleteModalOpen(false);
     }
-  }
+  };
 
   // Count checklist progress
   let totalChecklistItems = 0;
@@ -42,6 +47,7 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
   const isChecklistComplete = hasChecklist && totalChecklistItems === completedChecklistItems;
 
   return (
+    <>
     <Draggable draggableId={card.id} index={index}>
       {(provided, snapshot) => (
         <>
@@ -143,6 +149,17 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
         </>
       )}
     </Draggable>
+
+    <ConfirmModal
+      isOpen={isDeleteModalOpen}
+      onClose={() => setIsDeleteModalOpen(false)}
+      onConfirm={confirmDeleteCard}
+      title="Delete Card"
+      message={`Are you sure you want to delete the card "${card.title}"? This action cannot be undone.`}
+      confirmText="Delete Card"
+      isLoading={isDeletingLoading}
+    />
+    </>
   );
 };
 

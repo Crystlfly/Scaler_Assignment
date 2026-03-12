@@ -3,6 +3,7 @@ import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import List from './List';
 import axios from 'axios';
 import { FiPlus } from 'react-icons/fi';
+import ConfirmModal from './ModalComponents/ConfirmModal';
 import { TfiTrello } from 'react-icons/tfi';
 
 const API_URL = 'http://localhost:5000/api';
@@ -10,11 +11,13 @@ const API_URL = 'http://localhost:5000/api';
 const Board = ({ fetchBoardsAndActive }) => {
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAddingList, setIsAddingList] = useState(false);
-  const [newListTitle, setNewListTitle] = useState('');
+  const [isAddingList, setIsAddingList] = React.useState(false);
+  const [newListTitle, setNewListTitle] = React.useState('');
   
-  const [isEditingBoard, setIsEditingBoard] = useState(false);
+  const [isEditingBoard, setIsEditingBoard] = React.useState(false);
   const [editBoardTitle, setEditBoardTitle] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+  const [isDeletingBoardLoading, setIsDeletingBoardLoading] = React.useState(false);
 
   useEffect(() => {
     const fetchBoard = async () => {
@@ -147,15 +150,21 @@ const Board = ({ fetchBoardsAndActive }) => {
     }
   };
 
-  const handleDeleteBoard = async () => {
-    if (window.confirm(`Are you sure you want to completely delete the board "${board.title}"? This cannot be undone.`)) {
-        try {
-            await axios.delete(`${API_URL}/boards/${board.id}`);
-            localStorage.removeItem('activeBoardId');
-            if (fetchBoardsAndActive) fetchBoardsAndActive();
-        } catch (error) {
-             console.error("Failed to delete board:", error);
-        }
+  const handleDeleteBoard = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteBoard = async () => {
+    setIsDeletingBoardLoading(true);
+    try {
+        await axios.delete(`${API_URL}/boards/${board.id}`);
+        localStorage.removeItem('activeBoardId');
+        if (fetchBoardsAndActive) fetchBoardsAndActive();
+    } catch (error) {
+         console.error("Failed to delete board:", error);
+    } finally {
+        setIsDeletingBoardLoading(false);
+        setIsDeleteModalOpen(false);
     }
   };
 
@@ -260,6 +269,16 @@ const Board = ({ fetchBoardsAndActive }) => {
           )}
         </Droppable>
       </DragDropContext>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteBoard}
+        title="Delete Board"
+        message={`Are you sure you want to completely delete the board "${board.title}"? This action cannot be undone.`}
+        confirmText="Delete Board"
+        isLoading={isDeletingBoardLoading}
+      />
     </div>
   );
 };

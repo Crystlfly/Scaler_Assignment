@@ -3,6 +3,7 @@ import { Droppable, Draggable } from '@hello-pangea/dnd';
 import Card from './Card';
 import axios from 'axios';
 import { FiMoreHorizontal, FiPlus } from 'react-icons/fi';
+import ConfirmModal from './ModalComponents/ConfirmModal';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -14,6 +15,7 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
   
   const [isEditingTitleLoading, setIsEditingTitleLoading] = React.useState(false);
   const [isDeletingListLoading, setIsDeletingListLoading] = React.useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   
   const [newCardTitle, setNewCardTitle] = React.useState('');
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -29,9 +31,9 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
 
     try {
       await axios.post(`${API_URL}/cards`, { title: newCardTitle, listId: list.id });
+      await refreshBoard();
       setNewCardTitle('');
       setIsAddingCard(false);
-      await refreshBoard();
     } catch (error) {
       console.error("Failed to add card:", error);
     } finally {
@@ -39,20 +41,23 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
     }
   };
 
-  const deleteList = async () => {
-    if (window.confirm(`Delete list '${list.title}'?`)) {
-      setIsDeletingListLoading(true);
-      setIsMenuOpen(false);
-      try {
-        await axios.delete(`${API_URL}/lists/${list.id}`);
-        await refreshBoard();
-      } catch (error) {
-        console.error("Failed to delete list:", error);
-      } finally {
-        setIsDeletingListLoading(false);
-      }
+  const deleteList = () => {
+    setIsMenuOpen(false);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteList = async () => {
+    setIsDeletingListLoading(true);
+    try {
+      await axios.delete(`${API_URL}/lists/${list.id}`);
+      await refreshBoard();
+    } catch (error) {
+      console.error("Failed to delete list:", error);
+    } finally {
+      setIsDeletingListLoading(false);
+      setIsDeleteModalOpen(false);
     }
-  }
+  };
 
   const updateListTitle = async () => {
     if (listTitle.trim() && listTitle !== list.title) {
@@ -103,6 +108,7 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
   }) || [];
 
   return (
+    <>
     <Draggable draggableId={list.id} index={index}>
       {(provided, snapshot) => (
         <div
@@ -243,6 +249,17 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
         </div>
       )}
     </Draggable>
+
+    <ConfirmModal
+      isOpen={isDeleteModalOpen}
+      onClose={() => setIsDeleteModalOpen(false)}
+      onConfirm={confirmDeleteList}
+      title="Delete List"
+      message={`Are you sure you want to delete the list "${list.title}"? This action cannot be undone and all cards inside will be lost.`}
+      confirmText="Delete List"
+      isLoading={isDeletingListLoading}
+    />
+    </>
   );
 };
 

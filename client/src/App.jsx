@@ -97,9 +97,9 @@ function App() {
         title: newListTitle,
         boardId: board.id
       });
+      await fetchBoard();
       setNewListTitle('');
       setIsAddingList(false);
-      await fetchBoard();
     } catch (err) {
       console.error('Error adding list', err);
     } finally {
