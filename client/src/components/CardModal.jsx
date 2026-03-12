@@ -6,6 +6,7 @@ import ModalDescription from './ModalComponents/ModalDescription';
 import ModalChecklists from './ModalComponents/ModalChecklists';
 import ModalSidebar from './ModalComponents/ModalSidebar';
 import ModalBadges from './ModalComponents/ModalBadges';
+import ModalActivity from './ModalComponents/ModalActivity';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -44,6 +45,8 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
     
     const [showCover, setShowCover] = useState(false);
     const [isUpdatingCoverLoading, setIsUpdatingCoverLoading] = useState(false);
+
+    const [isAddingCommentLoading, setIsAddingCommentLoading] = useState(false);
 
     const [dbLabels, setDbLabels] = useState([]);
     const [dbUsers, setDbUsers] = useState([]);
@@ -148,6 +151,16 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
         } catch (e) { alert("Failed to update cover."); }
         finally { setIsUpdatingCoverLoading(false); }
     }
+
+    const addComment = async (text) => {
+        setIsAddingCommentLoading(true);
+        try {
+            await axios.post(`${API_URL}/cards/${card.id}/comments`, { text, authorName: "Demo User" });
+            await fetchCard();
+            await refreshBoard();
+        } catch (e) { alert("Failed to add comment."); }
+        finally { setIsAddingCommentLoading(false); }
+    };
 
     const addChecklist = async (e) => {
         e?.preventDefault();
@@ -366,6 +379,13 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                         toggleChecklistItem={toggleChecklistItem}
                         isAddingItemLoading={isAddingItemLoading}
                         togglingItemId={togglingItemId}
+                    />
+
+                    {/* Activity Section */}
+                    <ModalActivity
+                        card={card}
+                        addComment={addComment}
+                        isAddingCommentLoading={isAddingCommentLoading}
                     />
 
                 </div>

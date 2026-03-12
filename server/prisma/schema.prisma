@@ -52,6 +52,7 @@ model Card {
   labels      CardLabel[]
   members     CardMember[]
   checklists  Checklist[]
+  comments    Comment[]
 }
 
 model Label {
@@ -97,4 +98,13 @@ model ChecklistItem {
   isCompleted Boolean @default(false)
   checklistId String
   checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  text        String
+  createdAt   DateTime @default(now())
+  authorName  String   @default("Demo User")
+  cardId      String
+  card        Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
 }

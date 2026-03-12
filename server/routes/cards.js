@@ -36,6 +36,7 @@ router.get("/:id", async (req, res) => {
         labels: { include: { label: true } },
         members: { include: { user: true } },
         checklists: { include: { items: true } },
+        comments: { orderBy: { createdAt: 'desc' } }
       }
     });
     if (!card) {
@@ -79,6 +80,7 @@ router.put("/:id", async (req, res) => {
         labels: { include: { label: true } },
         members: { include: { user: true } },
         checklists: { include: { items: true } },
+        comments: { orderBy: { createdAt: 'desc' } }
       }
     });
     res.json(card);
@@ -162,6 +164,23 @@ router.post("/:id/checklists", async (req, res) => {
     res.status(201).json(checklist);
   } catch (error) {
     res.status(500).json({ error: "Failed to create checklist" });
+  }
+});
+
+// Create comment
+router.post("/:id/comments", async (req, res) => {
+  try {
+    const { text, authorName } = req.body;
+    const comment = await prisma.comment.create({
+      data: {
+        text,
+        authorName: authorName || "Demo User",
+        cardId: req.params.id
+      }
+    });
+    res.status(201).json(comment);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create comment" });
   }
 });
 
