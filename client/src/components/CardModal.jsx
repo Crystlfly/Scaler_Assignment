@@ -7,6 +7,7 @@ import ModalChecklists from './ModalComponents/ModalChecklists';
 import ModalSidebar from './ModalComponents/ModalSidebar';
 import ModalBadges from './ModalComponents/ModalBadges';
 import ModalActivity from './ModalComponents/ModalActivity';
+import ModalAttachments from './ModalComponents/ModalAttachments';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -45,6 +46,9 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
     
     const [showCover, setShowCover] = useState(false);
     const [isUpdatingCoverLoading, setIsUpdatingCoverLoading] = useState(false);
+
+    const [showAttachment, setShowAttachment] = useState(false);
+    const [isAddingAttachmentLoading, setIsAddingAttachmentLoading] = useState(false);
 
     const [isAddingCommentLoading, setIsAddingCommentLoading] = useState(false);
 
@@ -160,6 +164,17 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
             await refreshBoard();
         } catch (e) { alert("Failed to add comment."); }
         finally { setIsAddingCommentLoading(false); }
+    };
+
+    const addAttachment = async (url, name) => {
+        setIsAddingAttachmentLoading(true);
+        try {
+            await axios.post(`${API_URL}/cards/${card.id}/attachments`, { url, name });
+            setShowAttachment(false);
+            await fetchCard();
+            await refreshBoard();
+        } catch (e) { alert("Failed to add attachment."); }
+        finally { setIsAddingAttachmentLoading(false); }
     };
 
     const addChecklist = async (e) => {
@@ -368,6 +383,11 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                         isUpdatingDescLoading={isUpdatingDescLoading}
                     />
 
+                    {/* Attachments Section */}
+                    {card.attachments && card.attachments.length > 0 && (
+                        <ModalAttachments attachments={card.attachments} />
+                    )}
+
                     {/* Checklists Section */}
                     <ModalChecklists
                         card={card}
@@ -397,17 +417,19 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                         showLabels={showLabels} setShowLabels={setShowLabels}
                         showDatePicker={showDatePicker} setShowDatePicker={setShowDatePicker}
                         showCover={showCover} setShowCover={setShowCover}
+                        showAttachment={showAttachment} setShowAttachment={setShowAttachment}
                         isAddingChecklist={isAddingChecklist} setIsAddingChecklist={setIsAddingChecklist}
                         dbUsers={dbUsers} assignMember={assignMember}
                         dbLabels={dbLabels} assignLabel={assignLabel}
                         addChecklist={addChecklist} newChecklistTitle={newChecklistTitle} setNewChecklistTitle={setNewChecklistTitle}
                         dueDateInput={dueDateInput} setDueDateInput={setDueDateInput} updateDueDate={updateDueDate}
-                        updateCover={updateCover}
+                        updateCover={updateCover} addAttachment={addAttachment}
                         isAddingChecklistLoading={isAddingChecklistLoading}
                         isAssigningMemberLoading={isAssigningMemberLoading}
                         isAssigningLabelLoading={isAssigningLabelLoading}
                         isUpdatingDueDateLoading={isUpdatingDueDateLoading}
                         isUpdatingCoverLoading={isUpdatingCoverLoading}
+                        isAddingAttachmentLoading={isAddingAttachmentLoading}
                     />
                 </div>
             </div>

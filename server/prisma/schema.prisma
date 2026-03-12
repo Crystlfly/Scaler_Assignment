@@ -53,6 +53,7 @@ model Card {
   members     CardMember[]
   checklists  Checklist[]
   comments    Comment[]
+  attachments Attachment[]
 }
 
 model Label {
@@ -107,4 +108,13 @@ model Comment {
   authorName  String   @default("Demo User")
   cardId      String
   card        Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
 }

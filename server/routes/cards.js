@@ -36,7 +36,8 @@ router.get("/:id", async (req, res) => {
         labels: { include: { label: true } },
         members: { include: { user: true } },
         checklists: { include: { items: true } },
-        comments: { orderBy: { createdAt: 'desc' } }
+        comments: { orderBy: { createdAt: 'desc' } },
+        attachments: { orderBy: { createdAt: 'desc' } }
       }
     });
     if (!card) {
@@ -80,7 +81,8 @@ router.put("/:id", async (req, res) => {
         labels: { include: { label: true } },
         members: { include: { user: true } },
         checklists: { include: { items: true } },
-        comments: { orderBy: { createdAt: 'desc' } }
+        comments: { orderBy: { createdAt: 'desc' } },
+        attachments: { orderBy: { createdAt: 'desc' } }
       }
     });
     res.json(card);
@@ -181,6 +183,23 @@ router.post("/:id/comments", async (req, res) => {
     res.status(201).json(comment);
   } catch (error) {
     res.status(500).json({ error: "Failed to create comment" });
+  }
+});
+
+// Create attachment
+router.post("/:id/attachments", async (req, res) => {
+  try {
+    const { name, url } = req.body;
+    const attachment = await prisma.attachment.create({
+      data: {
+        name,
+        url,
+        cardId: req.params.id
+      }
+    });
+    res.status(201).json(attachment);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to create attachment" });
   }
 });
 
