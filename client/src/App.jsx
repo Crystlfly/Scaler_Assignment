@@ -283,14 +283,14 @@ function App() {
       />
 
       {/* Main Board Area */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 pb-4">
+      <div className="flex-1 overflow-x-auto overflow-y-auto px-4 md:px-6 pb-4">
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="board" type="list" direction="horizontal">
             {(provided) => (
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className="flex items-start h-full space-x-3"
+                className="flex flex-col md:flex-row items-center md:items-start h-full space-y-4 md:space-y-0 md:space-x-3 w-full"
               >
                 {/* MODULAR COMPONENT CALL */}
                 {board?.lists?.map((list, index) => (
@@ -308,7 +308,7 @@ function App() {
                 {provided.placeholder}
 
                 {/* Add New List Form */}
-                <div className="w-[272px] shrink-0">
+                <div className="w-full sm:w-[300px] shrink-0">
                   {isAddingList ? (
                     <form onSubmit={handleAddList} className="bg-[#f1f2f4] p-2 rounded-xl shadow-sm">
                       <input

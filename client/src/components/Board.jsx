@@ -177,7 +177,7 @@ const Board = ({ fetchBoardsAndActive }) => {
       style={{ backgroundColor: board.background }}
     >
       {/* Top Navbar mimic */}
-      <div className="h-12 border-b border-[#ffffff29] bg-[#00000029] flex items-center px-4 justify-between shrink-0">
+      <div className="h-[auto] min-h-[48px] border-b border-[#ffffff29] bg-[#00000029] flex flex-wrap gap-y-2 items-center px-4 py-2 justify-between shrink-0">
          <div className="flex items-center gap-2 text-white font-bold text-lg cursor-pointer hover:bg-[#ffffff29] px-2 py-1 rounded transition-colors">
             <TfiTrello size={20} />
             <span>Trello Clone</span>
@@ -188,7 +188,7 @@ const Board = ({ fetchBoardsAndActive }) => {
       </div>
 
       {/* Board Header */}
-      <div className="px-6 py-3 flex items-center shrink-0 justify-between">
+      <div className="px-4 py-3 flex flex-col md:flex-row items-start md:items-center shrink-0 justify-between gap-3">
          {/* Edit Board Title block */}
          {isEditingBoard ? (
             <input 
@@ -213,12 +213,14 @@ const Board = ({ fetchBoardsAndActive }) => {
          )}
 
          {/* Delete Board Button */}
-         <button 
-             onClick={handleDeleteBoard}
-             className="bg-[#ffffff29] hover:bg-red-500/80 text-white px-3 py-1.5 rounded transition-colors text-sm font-medium backdrop-blur-sm shadow-sm"
-         >
-             Delete Board
-         </button>
+         <div className="w-full md:w-auto">
+             <button 
+                 onClick={handleDeleteBoard}
+                 className="bg-[#ffffff29] hover:bg-red-500/80 text-white px-3 py-1.5 rounded transition-colors text-sm font-medium backdrop-blur-sm shadow-sm"
+             >
+                 Delete Board
+             </button>
+         </div>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -227,7 +229,7 @@ const Board = ({ fetchBoardsAndActive }) => {
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="flex-1 overflow-x-auto overflow-y-hidden px-6 pb-4 flex items-start h-full"
+              className="flex-1 overflow-x-auto overflow-y-auto px-4 md:px-6 pb-4 flex flex-col md:flex-row items-center md:items-start h-full space-y-4 md:space-y-0 w-full"
             >
               {board.lists?.map((list, index) => (
                 <List key={list.id} list={list} index={index} refreshBoard={refreshBoard} />
@@ -238,7 +240,7 @@ const Board = ({ fetchBoardsAndActive }) => {
               {isAddingList ? (
                   <form 
                     onSubmit={addList}
-                    className="bg-[#f1f2f4] rounded-xl w-[272px] shrink-0 p-3 shadow-sm flex flex-col gap-2 relative h-fit"
+                    className="bg-[#f1f2f4] rounded-xl w-full sm:w-[300px] shrink-0 p-3 shadow-sm flex flex-col gap-2 relative h-fit"
                   >
                      <input 
                         autoFocus
@@ -260,7 +262,7 @@ const Board = ({ fetchBoardsAndActive }) => {
               ) : (
                   <button 
                     onClick={() => setIsAddingList(true)}
-                    className="bg-[#ffffff3d] hover:bg-[#ffffff29] transition-colors rounded-xl w-[272px] shrink-0 p-3 text-white shadow-sm font-medium text-[14px] flex items-center gap-1 text-left h-fit"
+                    className="bg-[#ffffff3d] hover:bg-[#ffffff29] transition-colors rounded-xl w-full sm:w-[300px] shrink-0 p-3 text-white shadow-sm font-medium text-[14px] flex items-center gap-1 text-left h-fit"
                   >
                     <FiPlus size={18} /> Add another list
                   </button>

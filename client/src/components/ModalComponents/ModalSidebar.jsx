@@ -35,7 +35,7 @@ const ModalSidebar = ({
         }
     };
     return (
-        <div className="w-[192px] p-6 pl-2 pt-16 space-y-4 fixed right-0 mr-[-16px] md:relative md:mr-0 z-0">
+        <div className="w-full md:w-[192px] p-6 md:pl-2 pt-6 md:pt-16 space-y-4 relative z-0 border-t md:border-t-0 border-gray-200 mt-4 md:mt-0">
             <div>
                 <h4 className="text-xs font-semibold text-[#5e6c84] mb-2 uppercase">Add to card</h4>
                 <div className="space-y-2 relative">

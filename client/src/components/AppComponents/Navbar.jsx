@@ -3,10 +3,10 @@ import { MdAdd, MdClose } from 'react-icons/md';
 
 const BACKGROUND_COLORS = ['#0079bf', '#519839', '#b04632', '#89609e', '#d29034', '#838c91'];
 
-const Navbar = ({ boards, board, fetchBoardsAndActive, updateBoardBackground, handleCreateBoard }) => {
+const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, updateBoardBackground }) => {
+  const [isBackgroundMenuOpen, setIsBackgroundMenuOpen] = useState(false);
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState('');
-  const [isBackgroundMenuOpen, setIsBackgroundMenuOpen] = useState(false);
 
   const onSubmitCreate = (e) => {
     e.preventDefault();
@@ -18,9 +18,9 @@ const Navbar = ({ boards, board, fetchBoardsAndActive, updateBoardBackground, ha
   };
 
   return (
-    <nav className="bg-black/20 text-white flex items-center justify-between px-4 py-2 border-b border-black/10 shrink-0">
-      <div className="flex items-center space-x-4">
-        <div className="font-bold text-xl drop-shadow-sm tracking-wider flex items-center cursor-pointer">
+    <nav className="bg-black/20 text-white flex items-center px-4 py-2 border-b border-black/10 shrink-0 w-full">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
+        <div className="font-bold text-xl drop-shadow-sm tracking-wider flex items-center cursor-pointer mr-0 sm:mr-2">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mr-2">
             <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM10 17C10 17.5523 9.55228 18 9 18H6C5.44772 18 5 17.5523 5 17V6C5 5.44772 5.44772 5 6 5H9C9.55228 5 10 5.44772 10 6V17ZM18 12C18 12.5523 17.5523 13 17 13H14C13.4477 13 13 12.5523 13 12V6C13 5.44772 13.4477 5 14 5H17C17.5523 5 18 5.44772 18 6V12Z" />
           </svg>

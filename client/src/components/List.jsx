@@ -116,7 +116,7 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           style={provided.draggableProps.style}
-          className="bg-[#f1f2f4] rounded-xl w-[272px] shrink-0 max-h-full flex flex-col mr-3 shadow-sm text-[#172b4d] relative"
+          className="bg-[#f1f2f4] rounded-xl w-full sm:w-[300px] shrink-0 max-h-full flex flex-col md:mr-3 shadow-sm text-[#172b4d] relative"
         >
           {/* Deletion Loading Overlay */}
           {isDeletingListLoading && (

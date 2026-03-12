@@ -25,8 +25,8 @@ const BoardHeader = ({
   if (!board) return null;
 
   return (
-    <div className="px-6 py-3 flex items-center shrink-0 justify-between">
-      <div className="flex items-center gap-4">
+    <div className="px-4 py-3 flex flex-col md:flex-row items-start md:items-center shrink-0 justify-between gap-3">
+      <div className="flex items-center gap-4 w-full md:w-auto">
         {/* Edit Board Title block */}
         {isEditingBoard ? (
           <input
@@ -59,7 +59,7 @@ const BoardHeader = ({
         )}
       </div>
 
-      <div className="flex items-center gap-2 relative">
+      <div className="flex flex-wrap items-center gap-2 gap-y-2 relative w-full md:w-auto">
         {/* Delete Board Button */}
         <button
           onClick={handleDeleteBoard}
@@ -75,7 +75,7 @@ const BoardHeader = ({
             placeholder="Search cards..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 pr-3 py-1.5 rounded bg-white/20 text-white placeholder-white/80 focus:bg-white focus:text-[#172b4d] outline-none transition-colors text-sm w-48 focus:w-64 peer"
+            className="pl-9 pr-4 py-1.5 rounded bg-white/20 text-white placeholder-white/70 border border-white/30 focus:outline-none focus:bg-white focus:text-gray-900 transition-all w-32 sm:w-48 focus:w-full sm:focus:w-64"
           />
           <svg className="absolute left-2.5 top-2 w-4 h-4 text-white/80 peer-focus:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
