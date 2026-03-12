@@ -7,7 +7,7 @@ import CardModal from './CardModal';
 
 const API_URL = 'http://localhost:5000/api';
 
-const Card = ({ card, index, refreshBoard, listTitle }) => {
+const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -48,7 +48,7 @@ const Card = ({ card, index, refreshBoard, listTitle }) => {
             onClick={() => setIsModalOpen(true)}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
-            className={`bg-white rounded-lg p-3 mb-2 shrink-0 group relative border-b border-[#091e4224] cursor-pointer ${snapshot.isDragging ? 'shadow-lg rotate-2 z-50' : 'hover:outline-2 hover:outline-blue-500 shadow-sm'
+            className={`bg-white rounded-lg p-2.5 mb-2 shrink-0 group relative cursor-pointer shadow-[0_1px_1px_#091e4240] ${snapshot.isDragging ? 'shadow-lg rotate-2 z-50' : 'hover:outline-2 outline-blue-500 hover:bg-[#f4f5f7]'
               }`}
           >
             {/* Edit/Delete pencil indicator (Simplified to just delete for now mock) */}
@@ -64,11 +64,11 @@ const Card = ({ card, index, refreshBoard, listTitle }) => {
 
             {/* Labels - Trello styling: thin colored bars by default */}
             {card.labels && card.labels.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-[5px] pr-6">
+              <div className="flex flex-wrap gap-1 mb-1 pr-6">
                 {card.labels.map((cardLabel) => (
                   <div
                     key={cardLabel.id || cardLabel.label.id}
-                    className="h-2 w-10 rounded-sm"
+                    className="h-2 w-10 rounded-[3px]"
                     style={{ backgroundColor: cardLabel.label.color }}
                     title={cardLabel.label.title}
                   />
@@ -77,7 +77,7 @@ const Card = ({ card, index, refreshBoard, listTitle }) => {
             )}
 
             {/* Title */}
-            <div className="text-[14px] text-[#172b4d] pr-6 leading-5 break-words">{card.title}</div>
+            <div className="text-[14px] font-normal text-[#172b4d] pr-6 leading-5 break-words mb-1">{card.title}</div>
 
             {/* Badges Footer */}
             {(card.dueDate || hasChecklist || (card.members && card.members.length > 0)) && (
@@ -122,6 +122,7 @@ const Card = ({ card, index, refreshBoard, listTitle }) => {
           {isModalOpen && (
             <CardModal
               cardId={card.id}
+              boardId={boardId}
               listTitle={listTitle}
               onClose={() => setIsModalOpen(false)}
               refreshBoard={refreshBoard}

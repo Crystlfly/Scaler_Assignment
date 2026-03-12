@@ -10,37 +10,61 @@ const API_URL = 'http://localhost:5000/api';
 
 function App() {
   const [board, setBoard] = useState(null);
+  const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Board Creation State
+  const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+  const [newBoardTitle, setNewBoardTitle] = useState('');
+
   // UI State
+  const [searchQuery, setSearchQuery] = useState('');
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const listInputRef = useRef(null);
 
   useEffect(() => {
-    fetchBoard();
+    fetchBoardsAndActive();
   }, []);
 
-  useEffect(() => {
-    if (isAddingList && listInputRef.current) {
-      listInputRef.current.focus();
-    }
-  }, [isAddingList]);
-
-  const fetchBoard = async () => {
+  const fetchBoardsAndActive = async (activeId = null) => {
     try {
+      if (!board) setLoading(true);
       const boardsRes = await axios.get(`${API_URL}/boards`);
-      if (boardsRes.data.length > 0) {
-        const boardId = boardsRes.data[0].id;
-        const res = await axios.get(`${API_URL}/boards/${boardId}`);
+      setBoards(boardsRes.data);
+
+      let targetId = activeId;
+      if (!targetId && boardsRes.data.length > 0) {
+        targetId = boardsRes.data[0].id;
+      }
+
+      if (targetId) {
+        const res = await axios.get(`${API_URL}/boards/${targetId}`);
         setBoard(res.data);
       } else {
         setBoard(null);
       }
     } catch (error) {
-      console.error('Error fetching board:', error);
+      console.error('Error fetching boards:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBoard = async () => {
+    if (board) fetchBoardsAndActive(board.id);
+  };
+
+  const handleCreateBoard = async (e) => {
+    e.preventDefault();
+    if (!newBoardTitle.trim()) return;
+    try {
+      const res = await axios.post(`${API_URL}/boards`, { title: newBoardTitle, background: '#0079bf' });
+      setNewBoardTitle('');
+      setIsCreatingBoard(false);
+      fetchBoardsAndActive(res.data.id);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -139,8 +163,31 @@ function App() {
     }
   };
 
-  if (loading) return <div className="text-white p-8">Loading...</div>;
-  if (!board) return <div className="text-white p-8">No boards found. Please refresh or run the seed script.</div>;
+  if (loading) return <div className="text-[#172b4d] p-8 h-screen w-screen bg-white">Loading...</div>;
+
+  if (!board && boards.length === 0) {
+    return (
+      <div className="h-screen w-screen bg-[#f4f5f7] flex items-center justify-center font-sans">
+        <div className="bg-white p-6 rounded-lg shadow-xl w-96 text-center">
+          <h2 className="text-xl font-bold text-[#172b4d] mb-4">Welcome to Trello Clone</h2>
+          <p className="text-sm text-gray-600 mb-6">You don't have any boards yet. Create your first board to get started!</p>
+          <form onSubmit={handleCreateBoard}>
+            <input
+              type="text"
+              value={newBoardTitle}
+              onChange={(e) => setNewBoardTitle(e.target.value)}
+              placeholder="Board title"
+              className="w-full px-3 py-2 mb-4 border-2 border-blue-500 rounded text-sm focus:outline-none"
+              required
+            />
+            <button type="submit" className="w-full bg-[#0c66e4] hover:bg-[#0055cc] text-white py-2 rounded text-sm font-medium transition-colors">
+              Create First Board
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col font-sans" style={{ backgroundColor: board.background }}>
@@ -152,13 +199,83 @@ function App() {
             </svg>
             Trello Clone
           </div>
+
+          {/* Boards Dropdown */}
+          <div className="relative group">
+            <button className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition-colors text-sm font-medium">
+              Boards <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded shadow-xl hidden group-hover:block z-50 text-[#172b4d] overflow-hidden">
+              <div className="p-2 border-b text-xs font-semibold text-gray-500">Your Boards</div>
+              <div className="max-h-64 overflow-y-auto pt-1 pb-1">
+                {boards.map(b => (
+                  <div key={b.id} onClick={() => fetchBoardsAndActive(b.id)} className={`px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm flex items-center gap-2 ${board?.id === b.id ? 'bg-blue-50 font-medium' : ''}`}>
+                    <div className="w-6 h-4 rounded-sm shadow-sm" style={{ backgroundColor: b.background }}></div>
+                    {b.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="relative">
+            <button onClick={() => setIsCreatingBoard(!isCreatingBoard)} className="bg-white/20 hover:bg-white/30 p-1.5 rounded transition-colors relative">
+              <MdAdd size={20} />
+            </button>
+            {isCreatingBoard && (
+              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded shadow-xl text-black z-50 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-500">Create board</span>
+                  <button onClick={() => setIsCreatingBoard(false)} className="text-gray-400 hover:text-gray-600"><MdClose size={16} /></button>
+                </div>
+                <form onSubmit={handleCreateBoard}>
+                  <label className="block text-xs font-bold text-[#5e6c84] mb-1">Board title <span className="text-red-500">*</span></label>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={newBoardTitle}
+                    onChange={(e) => setNewBoardTitle(e.target.value)}
+                    className="w-full px-2 py-1.5 mb-3 border-2 border-blue-500 rounded text-sm focus:outline-none"
+                    required
+                  />
+                  <button type="submit" className="w-full bg-[#0c66e4] hover:bg-[#0055cc] text-white py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50" disabled={!newBoardTitle.trim()}>
+                    Create
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+
         </div>
       </nav>
 
       <div className="px-6 py-3 flex items-center justify-between shrink-0">
-        <h1 className="text-xl font-bold text-white bg-white/20 px-3 py-1 rounded drop-shadow-sm">
-          {board.title}
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-white bg-white/20 px-3 py-1 rounded drop-shadow-sm">
+            {board.title}
+          </h1>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search cards..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 pr-3 py-1.5 rounded bg-white/20 text-white placeholder-white/80 focus:bg-white focus:text-[#172b4d] outline-none transition-colors text-sm w-48 focus:w-64 peer"
+            />
+            <svg className="absolute left-2.5 top-2 w-4 h-4 text-white/80 peer-focus:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          {/* Filter button mock */}
+          <button className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded transition-colors text-sm font-medium">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            Filter
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 pb-4">
@@ -172,7 +289,7 @@ function App() {
               >
                 {/* MODULAR COMPONENT CALL */}
                 {board?.lists?.map((list, index) => (
-                  <List key={list.id} list={list} index={index} refreshBoard={fetchBoard} />
+                  <List key={list.id} list={list} index={index} refreshBoard={fetchBoard} searchQuery={searchQuery} />
                 ))}
                 {provided.placeholder}
 

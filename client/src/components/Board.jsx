@@ -138,19 +138,19 @@ const Board = () => {
       style={{ backgroundColor: board.background }}
     >
       {/* Top Navbar mimic */}
-      <div className="h-12 border-b border-white/20 bg-black/10 flex items-center px-4 justify-between">
-         <div className="flex items-center gap-2 text-white font-bold text-lg cursor-pointer hover:bg-white/20 px-2 py-1 rounded transition-colors">
+      <div className="h-12 border-b border-[#ffffff29] bg-[#00000029] flex items-center px-4 justify-between shrink-0">
+         <div className="flex items-center gap-2 text-white font-bold text-lg cursor-pointer hover:bg-[#ffffff29] px-2 py-1 rounded transition-colors">
             <TfiTrello size={20} />
             <span>Trello Clone</span>
          </div>
-         <div className="bg-white/20 hover:bg-white/30 text-white text-sm px-3 py-1.5 rounded font-medium cursor-pointer transition-colors backdrop-blur-sm">
-             demo@example.com
+         <div className="bg-[#ffffff29] hover:bg-[#ffffff3d] text-white text-sm px-3 py-1.5 rounded-full font-medium cursor-pointer transition-colors backdrop-blur-sm">
+             DU
          </div>
       </div>
 
       {/* Board Header */}
-      <div className="px-6 py-3 flex items-center">
-        <h1 className="text-xl font-bold text-white bg-white/20 px-3 py-1.5 rounded cursor-pointer hover:bg-white/30 backdrop-blur-sm transition-colors">
+      <div className="px-6 py-3 flex items-center shrink-0">
+        <h1 className="text-[18px] font-bold text-white bg-[#ffffff29] px-3 py-1.5 rounded cursor-pointer hover:bg-[#ffffff3d] backdrop-blur-sm transition-colors">
           {board.title}
         </h1>
       </div>
@@ -161,7 +161,7 @@ const Board = () => {
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="flex-1 overflow-x-auto overflow-y-hidden px-6 pb-4 flex items-start"
+              className="flex-1 overflow-x-auto overflow-y-hidden px-6 pb-4 flex items-start h-full"
             >
               {board.lists?.map((list, index) => (
                 <List key={list.id} list={list} index={index} refreshBoard={refreshBoard} />
