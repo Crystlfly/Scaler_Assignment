@@ -61,6 +61,20 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Update board title
+router.put("/:id", async (req, res) => {
+  try {
+    const { title } = req.body;
+    const board = await prisma.board.update({
+      where: { id: req.params.id },
+      data: { title },
+    });
+    res.json(board);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update board" });
+  }
+});
+
 // Delete board
 router.delete("/:id", async (req, res) => {
   try {

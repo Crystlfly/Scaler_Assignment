@@ -3,6 +3,7 @@ import { Draggable } from '@hello-pangea/dnd';
 import axios from 'axios';
 import { BiRightArrowAlt } from 'react-icons/bi';
 import { FiClock, FiCheckSquare } from 'react-icons/fi';
+import { format } from 'date-fns';
 import CardModal from './CardModal';
 
 const API_URL = 'http://localhost:5000/api';
@@ -10,15 +11,19 @@ const API_URL = 'http://localhost:5000/api';
 const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeletingLoading, setIsDeletingLoading] = useState(false);
 
   const deleteCard = async (e) => {
     e.stopPropagation();
     if (window.confirm(`Delete card '${card.title}'?`)) {
+      setIsDeletingLoading(true);
       try {
         await axios.delete(`${API_URL}/cards/${card.id}`);
-        refreshBoard();
+        await refreshBoard();
       } catch (error) {
         console.error("Failed to delete card:", error);
+      } finally {
+        setIsDeletingLoading(false);
       }
     }
   }
@@ -51,8 +56,15 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
             className={`bg-white rounded-lg p-2.5 mb-2 shrink-0 group relative cursor-pointer shadow-[0_1px_1px_#091e4240] ${snapshot.isDragging ? 'shadow-lg rotate-2 z-50' : 'hover:outline-2 outline-blue-500 hover:bg-[#f4f5f7]'
               }`}
           >
+            {/* Deletion Loading Overlay */}
+            {isDeletingLoading && (
+              <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center rounded-lg">
+                <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+
             {/* Edit/Delete pencil indicator (Simplified to just delete for now mock) */}
-            {isHovering && !snapshot.isDragging && (
+            {isHovering && !snapshot.isDragging && !isDeletingLoading && (
               <button
                 onClick={deleteCard}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -84,11 +96,11 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
               <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-[5px]">
 
                 <div className="flex items-center gap-2">
-                  {/* Due Date Indicator (Mock implementation to match screenshot style) */}
+                  {/* Due Date Indicator */}
                   {card.dueDate && (
                     <div className="flex items-center gap-1 text-[12px] p-[2px] px-1.5 rounded bg-[#ebecf0] text-[#5e6c84]">
                       <FiClock size={12} />
-                      <span>Mar 19</span>
+                      <span>{format(new Date(card.dueDate), 'MMM d')}</span>
                     </div>
                   )}
 

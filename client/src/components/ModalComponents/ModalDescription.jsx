@@ -7,7 +7,8 @@ const ModalDescription = ({
     setIsEditingDescription,
     editDescContent,
     setEditDescContent,
-    updateDescription
+    updateDescription,
+    isUpdatingDescLoading
 }) => {
     return (
         <div className="flex items-start gap-4 mb-8">
@@ -33,8 +34,17 @@ const ModalDescription = ({
                             rows={4}
                         />
                         <div className="flex items-center gap-2">
-                            <button onClick={updateDescription} className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-4 py-1.5 rounded-sm text-sm font-medium transition-colors">
-                                Save
+                            <button 
+                                onClick={updateDescription} 
+                                disabled={isUpdatingDescLoading}
+                                className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-4 py-1.5 rounded-sm text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {isUpdatingDescLoading ? (
+                                     <>
+                                       <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                       Saving...
+                                     </>
+                                ) : 'Save'}
                             </button>
                             <button onClick={() => { setIsEditingDescription(false); setEditDescContent(card.description || ""); }} className="px-3 py-1.5 hover:bg-gray-200 rounded-sm text-gray-600 transition-colors">
                                 Cancel

@@ -7,11 +7,14 @@ import { TfiTrello } from 'react-icons/tfi';
 
 const API_URL = 'http://localhost:5000/api';
 
-const Board = () => {
+const Board = ({ fetchBoardsAndActive }) => {
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
+  
+  const [isEditingBoard, setIsEditingBoard] = useState(false);
+  const [editBoardTitle, setEditBoardTitle] = useState('');
 
   useEffect(() => {
     const fetchBoard = async () => {
@@ -129,6 +132,33 @@ const Board = () => {
      }
   }
 
+  const handleUpdateBoardTitle = async () => {
+    setIsEditingBoard(false);
+    if (editBoardTitle.trim() && editBoardTitle !== board.title) {
+        try {
+            await axios.put(`${API_URL}/boards/${board.id}`, { title: editBoardTitle });
+            setBoard(prev => ({ ...prev, title: editBoardTitle }));
+            if (fetchBoardsAndActive) fetchBoardsAndActive(board.id);
+        } catch (error) {
+            console.error("Failed to update board:", error);
+        }
+    } else {
+        setEditBoardTitle(board.title);
+    }
+  };
+
+  const handleDeleteBoard = async () => {
+    if (window.confirm(`Are you sure you want to completely delete the board "${board.title}"? This cannot be undone.`)) {
+        try {
+            await axios.delete(`${API_URL}/boards/${board.id}`);
+            localStorage.removeItem('activeBoardId');
+            if (fetchBoardsAndActive) fetchBoardsAndActive();
+        } catch (error) {
+             console.error("Failed to delete board:", error);
+        }
+    }
+  };
+
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#0079bf]">Loading Board...</div>;
   if (!board) return <div className="h-screen flex items-center justify-center bg-[#0079bf]">No board found.</div>;
 
@@ -149,10 +179,37 @@ const Board = () => {
       </div>
 
       {/* Board Header */}
-      <div className="px-6 py-3 flex items-center shrink-0">
-        <h1 className="text-[18px] font-bold text-white bg-[#ffffff29] px-3 py-1.5 rounded cursor-pointer hover:bg-[#ffffff3d] backdrop-blur-sm transition-colors">
-          {board.title}
-        </h1>
+      <div className="px-6 py-3 flex items-center shrink-0 justify-between">
+         {/* Edit Board Title block */}
+         {isEditingBoard ? (
+            <input 
+               autoFocus
+               type="text"
+               value={editBoardTitle}
+               onChange={(e) => setEditBoardTitle(e.target.value)}
+               onBlur={handleUpdateBoardTitle}
+               onKeyDown={(e) => e.key === 'Enter' && handleUpdateBoardTitle()}
+               className="text-[18px] font-bold text-[#172b4d] px-3 py-1.5 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+            />
+         ) : (
+            <h1 
+               onClick={() => {
+                   setEditBoardTitle(board.title);
+                   setIsEditingBoard(true);
+               }}
+               className="text-[18px] font-bold text-white bg-[#ffffff29] px-3 py-1.5 rounded cursor-pointer hover:bg-[#ffffff3d] backdrop-blur-sm transition-colors"
+            >
+              {board.title}
+            </h1>
+         )}
+
+         {/* Delete Board Button */}
+         <button 
+             onClick={handleDeleteBoard}
+             className="bg-[#ffffff29] hover:bg-red-500/80 text-white px-3 py-1.5 rounded transition-colors text-sm font-medium backdrop-blur-sm shadow-sm"
+         >
+             Delete Board
+         </button>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>

@@ -10,7 +10,11 @@ const ModalSidebar = ({
     dbUsers, assignMember,
     dbLabels, assignLabel,
     addChecklist, newChecklistTitle, setNewChecklistTitle,
-    dueDateInput, setDueDateInput, updateDueDate
+    dueDateInput, setDueDateInput, updateDueDate,
+    isAddingChecklistLoading,
+    isAssigningMemberLoading,
+    isAssigningLabelLoading,
+    isUpdatingDueDateLoading
 }) => {
     return (
         <div className="w-[192px] p-6 pl-2 pt-16 space-y-4 fixed right-0 mr-[-16px] md:relative md:mr-0 z-0">
@@ -28,8 +32,10 @@ const ModalSidebar = ({
                                 <div className="absolute top-8 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-20 text-sm">
                                     <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Members</div>
                                     {dbUsers.map(m => (
-                                        <div key={m.id} onClick={() => assignMember(m.id)} className="flex items-center gap-2 p-1.5 hover:bg-gray-100 rounded cursor-pointer">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">{m.name.charAt(0)}</div>
+                                        <div key={m.id} onClick={() => isAssigningMemberLoading !== m.id && assignMember(m.id)} className={`flex items-center gap-2 p-1.5 rounded cursor-pointer ${isAssigningMemberLoading === m.id ? 'opacity-50' : 'hover:bg-gray-100'}`}>
+                                            <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                                {isAssigningMemberLoading === m.id ? <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : m.name.charAt(0)}
+                                            </div>
                                             <span>{m.name}</span>
                                         </div>
                                     ))}
@@ -49,8 +55,9 @@ const ModalSidebar = ({
                                 <div className="absolute top-16 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-20 text-sm space-y-1 mt-1">
                                     <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Labels</div>
                                     {dbLabels.map(l => (
-                                        <div key={l.id} onClick={() => assignLabel(l.id)} className="px-2 py-1.5 rounded flex items-center justify-between text-white font-medium cursor-pointer" style={{ backgroundColor: l.color }}>
-                                            {l.title} <FiPlus size={14} />
+                                        <div key={l.id} onClick={() => isAssigningLabelLoading !== l.id && assignLabel(l.id)} className={`px-2 py-1.5 rounded flex items-center justify-between text-white font-medium cursor-pointer ${isAssigningLabelLoading === l.id ? 'opacity-70' : ''}`} style={{ backgroundColor: l.color }}>
+                                            {l.title} 
+                                            {isAssigningLabelLoading === l.id ? <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <FiPlus size={14} />}
                                         </div>
                                     ))}
                                 </div>
@@ -69,7 +76,14 @@ const ModalSidebar = ({
                                 onChange={(e) => setNewChecklistTitle(e.target.value)}
                                 className="w-full px-2 py-1 mb-2 rounded border-2 border-blue-500 focus:outline-none text-sm"
                             />
-                            <button type="submit" className="bg-[#0c66e4] text-white w-full py-1 rounded text-sm font-medium">Add</button>
+                            <button 
+                                type="submit" 
+                                disabled={isAddingChecklistLoading}
+                                className="bg-[#0c66e4] text-white w-full py-1 rounded text-sm font-medium flex justify-center items-center gap-2 disabled:opacity-50"
+                            >
+                                {isAddingChecklistLoading && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                                Add
+                            </button>
                         </form>
                     ) : (
                         <button onClick={() => { setIsAddingChecklist(true); setShowLabels(false); setShowMembers(false); setShowDatePicker(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
@@ -93,10 +107,20 @@ const ModalSidebar = ({
                                     className="w-full px-2 py-1.5 mb-3 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-sm"
                                 />
                                 <div className="flex flex-col gap-2">
-                                    <button onClick={() => updateDueDate(dueDateInput ? `${dueDateInput}T12:00:00Z` : null)} className="bg-[#0c66e4] text-white hover:bg-[#0055cc] w-full py-1.5 rounded text-sm font-medium transition-colors">
+                                    <button 
+                                        onClick={() => updateDueDate(dueDateInput ? `${dueDateInput}T12:00:00Z` : null)} 
+                                        disabled={isUpdatingDueDateLoading}
+                                        className="flex items-center justify-center gap-2 bg-[#0c66e4] text-white hover:bg-[#0055cc] w-full py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
+                                    >
+                                        {isUpdatingDueDateLoading && dueDateInput && <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />}
                                         Save
                                     </button>
-                                    <button onClick={() => updateDueDate(null)} className="w-full py-1.5 rounded text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">
+                                    <button 
+                                        onClick={() => updateDueDate(null)} 
+                                        disabled={isUpdatingDueDateLoading}
+                                        className="flex items-center justify-center gap-2 w-full py-1.5 rounded text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                    >
+                                        {isUpdatingDueDateLoading && !dueDateInput && <div className="w-3 h-3 border-2 border-gray-500 border-t-gray-800 rounded-full animate-spin" />}
                                         Remove
                                     </button>
                                 </div>

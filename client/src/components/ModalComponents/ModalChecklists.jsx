@@ -8,7 +8,9 @@ const ModalChecklists = ({
     newItemContent,
     setNewItemContent,
     addChecklistItem,
-    toggleChecklistItem
+    toggleChecklistItem,
+    isAddingItemLoading,
+    togglingItemId
 }) => {
     return (
         <>
@@ -45,9 +47,13 @@ const ModalChecklists = ({
                                     <div key={item.id} className="flex items-start gap-3 group">
                                         <div
                                             className={`w-4 h-4 mt-1 rounded-sm border cursor-pointer flex items-center justify-center shrink-0 ${item.isCompleted ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 bg-white'}`}
-                                            onClick={() => toggleChecklistItem(item)}
+                                            onClick={() => togglingItemId !== item.id && toggleChecklistItem(item)}
                                         >
-                                            {item.isCompleted && <FiCheck size={12} className="opacity-0 group-hover:opacity-100 absolute" style={{ opacity: item.isCompleted ? 1 : '' }} />}
+                                            {togglingItemId === item.id ? (
+                                                <div className="w-2.5 h-2.5 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                item.isCompleted && <FiCheck size={12} className="opacity-0 group-hover:opacity-100 absolute" style={{ opacity: item.isCompleted ? 1 : '' }} />
+                                            )}
                                         </div>
                                         <div className={`text-sm ${item.isCompleted ? 'line-through text-gray-500' : 'text-[#172b4d]'}`}>
                                             {item.content}
@@ -73,8 +79,17 @@ const ModalChecklists = ({
                                         }}
                                     />
                                     <div className="flex items-center gap-2">
-                                        <button type="submit" className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors">
-                                            Add
+                                        <button 
+                                            type="submit" 
+                                            disabled={isAddingItemLoading}
+                                            className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                                        >
+                                            {isAddingItemLoading ? (
+                                                <>
+                                                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    Adding...
+                                                </>
+                                            ) : 'Add'}
                                         </button>
                                         <button type="button" onClick={() => { setAddingItemId(null); setNewItemContent(''); }} className="px-2 py-1.5 text-gray-500 hover:text-gray-800 transition-colors">
                                             Cancel

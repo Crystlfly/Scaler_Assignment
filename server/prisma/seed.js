@@ -15,13 +15,26 @@ async function main() {
 
   console.log('Cleared existing database entries.');
 
-  // Create default user
+  // Create default users
   const user = await prisma.user.create({
     data: {
       email: 'demo@example.com',
       name: 'Demo User',
       password: 'password123', // In a real app this would be hashed
     },
+  })
+  
+  const userAlex = await prisma.user.create({
+    data: { email: 'alex@example.com', name: 'Alex T.', password: 'password123' },
+  })
+  const userSarah = await prisma.user.create({
+    data: { email: 'sarah@example.com', name: 'Sarah J.', password: 'password123' },
+  })
+  const userMike = await prisma.user.create({
+    data: { email: 'mike@example.com', name: 'Mike R.', password: 'password123' },
+  })
+  const userEmma = await prisma.user.create({
+    data: { email: 'emma@example.com', name: 'Emma W.', password: 'password123' },
   })
 
   // Create Sample Board
@@ -38,6 +51,21 @@ async function main() {
   })
   const labelFeature = await prisma.label.create({
     data: { title: 'Feature', color: '#66bb6a', boardId: board.id },
+  })
+  const labelDesign = await prisma.label.create({
+    data: { title: 'Design', color: '#ab47bc', boardId: board.id },
+  })
+  const labelUrgent = await prisma.label.create({
+    data: { title: 'Urgent', color: '#ff7043', boardId: board.id },
+  })
+  const labelFrontend = await prisma.label.create({
+    data: { title: 'Frontend', color: '#29b6f6', boardId: board.id },
+  })
+  const labelBackend = await prisma.label.create({
+    data: { title: 'Backend', color: '#8d6e63', boardId: board.id },
+  })
+  const labelDocs = await prisma.label.create({
+    data: { title: 'Documentation', color: '#78909c', boardId: board.id },
   })
 
   // Create Lists

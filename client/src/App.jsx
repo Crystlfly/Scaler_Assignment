@@ -19,8 +19,21 @@ function App() {
 
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
+  const [isEditingBoard, setIsEditingBoard] = useState(false);
+  const [editBoardTitle, setEditBoardTitle] = useState('');
+  const [isUpdatingBoardTitleLoading, setIsUpdatingBoardTitleLoading] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Advanced Filter State
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterLabels, setFilterLabels] = useState([]);
+  const [filterMembers, setFilterMembers] = useState([]);
+  const [filterDueDate, setFilterDueDate] = useState(false);
+  const [dbUsers, setDbUsers] = useState([]);
+
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
+  const [isAddingListLoading, setIsAddingListLoading] = useState(false);
   const listInputRef = useRef(null);
 
   useEffect(() => {
@@ -30,19 +43,32 @@ function App() {
   const fetchBoardsAndActive = async (activeId = null) => {
     try {
       if (!board) setLoading(true);
+
+      // Fetch users for member filtering
+      const usersRes = await axios.get(`${API_URL}/users`);
+      setDbUsers(usersRes.data);
+
       const boardsRes = await axios.get(`${API_URL}/boards`);
       setBoards(boardsRes.data);
 
       let targetId = activeId;
-      if (!targetId && boardsRes.data.length > 0) {
-        targetId = boardsRes.data[0].id;
+      if (!targetId) {
+        // Try to read from localStorage first
+        const savedId = localStorage.getItem('activeBoardId');
+        if (savedId && boardsRes.data.some(b => b.id === savedId)) {
+          targetId = savedId;
+        } else if (boardsRes.data.length > 0) {
+          targetId = boardsRes.data[0].id;
+        }
       }
 
       if (targetId) {
         const res = await axios.get(`${API_URL}/boards/${targetId}`);
         setBoard(res.data);
+        localStorage.setItem('activeBoardId', res.data.id);
       } else {
         setBoard(null);
+        localStorage.removeItem('activeBoardId');
       }
     } catch (error) {
       console.error('Error fetching boards:', error);
@@ -52,7 +78,7 @@ function App() {
   };
 
   const fetchBoard = async () => {
-    if (board) fetchBoardsAndActive(board.id);
+    if (board) await fetchBoardsAndActive(board.id);
   };
 
   const handleCreateBoard = async (e) => {
@@ -71,6 +97,9 @@ function App() {
   const handleAddList = async (e) => {
     e.preventDefault();
     if (!newListTitle.trim()) return;
+    
+    setIsAddingListLoading(true);
+
     try {
       await axios.post(`${API_URL}/lists`, {
         title: newListTitle,
@@ -78,9 +107,11 @@ function App() {
       });
       setNewListTitle('');
       setIsAddingList(false);
-      fetchBoard();
+      await fetchBoard();
     } catch (err) {
       console.error('Error adding list', err);
+    } finally {
+      setIsAddingListLoading(false);
     }
   };
 
@@ -108,7 +139,7 @@ function App() {
       setBoard({ ...board, lists: newLists });
 
       try {
-        await axios.put(`${API_URL}/lists/${movedList.id}`, { order: newOrder });
+        await axios.put(`${API_URL}/lists/${movedList.id}/reorder`, { order: newOrder });
       } catch (err) {
         console.error("Failed to reorder list", err);
         fetchBoard();
@@ -160,6 +191,40 @@ function App() {
         fetchBoard();
       }
       return;
+    }
+  };
+
+  const handleUpdateBoardTitle = async () => {
+    setIsUpdatingBoardTitleLoading(true);
+    try {
+        if (editBoardTitle.trim() && editBoardTitle !== board.title) {
+            await axios.put(`${API_URL}/boards/${board.id}`, { title: editBoardTitle });
+            setBoard(prev => ({ ...prev, title: editBoardTitle }));
+            await fetchBoardsAndActive(board.id);
+        } else {
+            setEditBoardTitle(board.title);
+        }
+    } catch (error) {
+        console.error("Failed to update board:", error);
+        setEditBoardTitle(board.title);
+    } finally {
+        setIsUpdatingBoardTitleLoading(false);
+        setIsEditingBoard(false);
+    }
+  };
+
+  const handleDeleteBoard = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteBoard = async () => {
+    try {
+      await axios.delete(`${API_URL}/boards/${board.id}`);
+      localStorage.removeItem('activeBoardId');
+      setIsDeleteDialogOpen(false);
+      fetchBoardsAndActive();
+    } catch (error) {
+      console.error("Failed to delete board:", error);
     }
   };
 
@@ -249,15 +314,51 @@ function App() {
         </div>
       </nav>
 
-      <div className="px-6 py-3 flex items-center justify-between shrink-0">
+      {/* Board Header */}
+      <div className="px-6 py-3 flex items-center shrink-0 justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-white bg-white/20 px-3 py-1 rounded drop-shadow-sm">
-            {board.title}
-          </h1>
+          {/* Edit Board Title block */}
+          {isEditingBoard ? (
+            <input
+              autoFocus
+              type="text"
+              value={editBoardTitle}
+              onChange={(e) => setEditBoardTitle(e.target.value)}
+              onBlur={handleUpdateBoardTitle}
+              onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleUpdateBoardTitle();
+                  if (e.key === 'Escape') {
+                      setIsEditingBoard(false);
+                      setEditBoardTitle(board.title);
+                  }
+              }}
+              className="text-[18px] font-bold text-[#172b4d] px-3 py-1.5 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+              disabled={isUpdatingBoardTitleLoading}
+            />
+          ) : (
+            <h1
+              onClick={() => {
+                setEditBoardTitle(board.title);
+                setIsEditingBoard(true);
+              }}
+              className="text-[18px] font-bold text-white bg-[#ffffff29] px-3 py-1.5 rounded cursor-pointer hover:bg-[#ffffff3d] backdrop-blur-sm transition-colors flex items-center gap-2"
+            >
+              {board.title}
+              {isUpdatingBoardTitleLoading && <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>}
+            </h1>
+          )}
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 relative">
+          {/* Delete Board Button */}
+          <button
+            onClick={handleDeleteBoard}
+            className="bg-[#ffffff29] hover:bg-red-500 text-white px-3 py-1.5 rounded transition-colors text-sm font-medium backdrop-blur-sm shadow-sm"
+            title="Delete this entire board"
+          >
+            Delete Board
+          </button>
+          {/* Search & Filter Bar */}
           <div className="relative">
             <input
               type="text"
@@ -270,11 +371,96 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          {/* Filter button mock */}
-          <button className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded transition-colors text-sm font-medium">
+
+          {/* Filter button */}
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isFilterOpen || filterLabels.length || filterMembers.length || filterDueDate ? 'bg-white/30 text-white' : 'bg-white/20 hover:bg-white/30 text-white'}`}
+          >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-            Filter
+            Filter {((filterLabels.length + filterMembers.length + (filterDueDate ? 1 : 0)) > 0) && `(${(filterLabels.length + filterMembers.length + (filterDueDate ? 1 : 0))})`}
           </button>
+
+          {/* Filter Dropdown */}
+          {isFilterOpen && (
+            <div className="absolute top-full right-0 mt-2 w-72 bg-[#ffffff] rounded-lg shadow-xl text-[#172b4d] z-50 overflow-hidden flex flex-col font-sans border border-gray-200">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                <span className="font-semibold text-gray-700 text-sm">Filter</span>
+                <button onClick={() => setIsFilterOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  <MdClose size={18} />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto max-h-[400px] p-2 space-y-4">
+                {/* Due Date Filter */}
+                <div>
+                  <h4 className="text-xs font-semibold text-[#5e6c84] mb-2 px-2 uppercase shadow-none tracking-wider">Due date</h4>
+                  <div
+                    onClick={() => setFilterDueDate(!filterDueDate)}
+                    className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-gray-500">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                      </div>
+                      <span className="text-sm">Has due date</span>
+                    </div>
+                    {filterDueDate && <span className="text-blue-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
+                  </div>
+                </div>
+
+                {/* Labels Filter */}
+                {board.labels && board.labels.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-[#5e6c84] mb-2 px-2 uppercase shadow-none tracking-wider">Labels</h4>
+                    <div className="space-y-1">
+                      {board.labels.map(label => {
+                        const isSelected = filterLabels.includes(label.id);
+                        return (
+                          <div
+                            key={label.id}
+                            onClick={() => setFilterLabels(prev => isSelected ? prev.filter(id => id !== label.id) : [...prev, label.id])}
+                            className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-2 flex-1">
+                              <div className="w-8 h-6 rounded text-transparent group-hover:bg-opacity-80 transition-opacity" style={{ backgroundColor: label.color }}></div>
+                              <span className="text-sm truncate pr-2">{label.title || 'unnamed'}</span>
+                            </div>
+                            {isSelected && <span className="text-blue-600 shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Members Filter */}
+                {dbUsers && dbUsers.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-[#5e6c84] mb-2 px-2 uppercase shadow-none tracking-wider">Members</h4>
+                    <div className="space-y-1">
+                      {dbUsers.map(user => {
+                        const isSelected = filterMembers.includes(user.id);
+                        return (
+                          <div
+                            key={user.id}
+                            onClick={() => setFilterMembers(prev => isSelected ? prev.filter(id => id !== user.id) : [...prev, user.id])}
+                            className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">{user.name.charAt(0)}</div>
+                              <span className="text-sm truncate">{user.name}</span>
+                            </div>
+                            {isSelected && <span className="text-blue-600 shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -289,7 +475,16 @@ function App() {
               >
                 {/* MODULAR COMPONENT CALL */}
                 {board?.lists?.map((list, index) => (
-                  <List key={list.id} list={list} index={index} refreshBoard={fetchBoard} searchQuery={searchQuery} />
+                  <List
+                    key={list.id}
+                    list={list}
+                    index={index}
+                    refreshBoard={fetchBoard}
+                    searchQuery={searchQuery}
+                    filterLabels={filterLabels}
+                    filterMembers={filterMembers}
+                    filterDueDate={filterDueDate}
+                  />
                 ))}
                 {provided.placeholder}
 
@@ -307,8 +502,17 @@ function App() {
                         className="w-full px-3 py-1.5 text-sm rounded border-2 border-blue-500 outline-none"
                       />
                       <div className="flex items-center mt-2 space-x-2">
-                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded cursor-pointer">
-                          Add list
+                        <button 
+                          type="submit" 
+                          disabled={isAddingListLoading}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {isAddingListLoading ? (
+                             <>
+                               <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                               Adding...
+                             </>
+                          ) : 'Add list'}
                         </button>
                         <button
                           type="button"
@@ -334,6 +538,31 @@ function App() {
           </Droppable>
         </DragDropContext>
       </div>
+
+      {/* Delete Board Modal */}
+      {isDeleteDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-[320px] overflow-hidden">
+            <div className="px-4 py-3 flex justify-between items-center border-b border-gray-200">
+              <h3 className="font-semibold text-[#172b4d] text-[14px]">Delete board?</h3>
+              <button onClick={() => setIsDeleteDialogOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <MdClose size={18} />
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-[14px] text-[#172b4d] mb-4 leading-normal">
+                Are you sure you want to completely delete the board <strong>"{board.title}"</strong>? This action cannot be undone.
+              </p>
+              <button
+                onClick={confirmDeleteBoard}
+                className="w-full bg-[#c9372c] hover:bg-[#ae2e24] text-white font-medium py-1.5 px-4 rounded text-[14px] transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,10 +6,15 @@ import { FiMoreHorizontal, FiPlus } from 'react-icons/fi';
 
 const API_URL = 'http://localhost:5000/api';
 
-const List = ({ list, index, refreshBoard, searchQuery = '' }) => {
+const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], filterMembers = [], filterDueDate = false }) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [listTitle, setListTitle] = React.useState(list.title);
   const [isAddingCard, setIsAddingCard] = React.useState(false);
+  const [isAddingCardLoading, setIsAddingCardLoading] = React.useState(false);
+  
+  const [isEditingTitleLoading, setIsEditingTitleLoading] = React.useState(false);
+  const [isDeletingListLoading, setIsDeletingListLoading] = React.useState(false);
+  
   const [newCardTitle, setNewCardTitle] = React.useState('');
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -19,51 +24,82 @@ const List = ({ list, index, refreshBoard, searchQuery = '' }) => {
       setIsAddingCard(false);
       return;
     }
+    
+    setIsAddingCardLoading(true);
 
     try {
       await axios.post(`${API_URL}/cards`, { title: newCardTitle, listId: list.id });
       setNewCardTitle('');
       setIsAddingCard(false);
-      refreshBoard();
+      await refreshBoard();
     } catch (error) {
       console.error("Failed to add card:", error);
+    } finally {
+      setIsAddingCardLoading(false);
     }
   };
 
   const deleteList = async () => {
     if (window.confirm(`Delete list '${list.title}'?`)) {
+      setIsDeletingListLoading(true);
+      setIsMenuOpen(false);
       try {
         await axios.delete(`${API_URL}/lists/${list.id}`);
-        refreshBoard();
+        await refreshBoard();
       } catch (error) {
         console.error("Failed to delete list:", error);
+      } finally {
+        setIsDeletingListLoading(false);
       }
     }
   }
 
   const updateListTitle = async () => {
-    setIsEditing(false);
     if (listTitle.trim() && listTitle !== list.title) {
+      setIsEditingTitleLoading(true);
       try {
         await axios.put(`${API_URL}/lists/${list.id}`, { title: listTitle });
-        refreshBoard();
+        await refreshBoard();
       } catch (error) {
         console.error("Failed to update list:", error);
+      } finally {
+        setIsEditingTitleLoading(false);
+        setIsEditing(false);
       }
     } else {
       setListTitle(list.title);
+      setIsEditing(false);
     }
   }
 
   const filteredCards = list.cards?.filter(card => {
-    if (!searchQuery) return true;
-    const lowerQuery = searchQuery.toLowerCase();
+    // 1. Keyword Text Search
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      const titleMatch = card.title?.toLowerCase().includes(lowerQuery);
+      const labelsMatch = card.labels?.some(cl => cl.label.title?.toLowerCase().includes(lowerQuery));
+      const membersMatch = card.members?.some(cm => cm.user.name?.toLowerCase().includes(lowerQuery));
+      if (!titleMatch && !labelsMatch && !membersMatch) return false;
+    }
 
-    const titleMatch = card.title.toLowerCase().includes(lowerQuery);
-    const labelsMatch = card.labels?.some(cl => cl.label.title?.toLowerCase().includes(lowerQuery));
-    const membersMatch = card.members?.some(cm => cm.user.name.toLowerCase().includes(lowerQuery));
+    // 2. Exact Label Filters (OR logic within labels)
+    if (filterLabels.length > 0) {
+      const hasSelectedLabel = card.labels?.some(cl => filterLabels.includes(cl.label.id));
+      if (!hasSelectedLabel) return false;
+    }
 
-    return titleMatch || labelsMatch || membersMatch;
+    // 3. Exact Member Filters (OR logic within members)
+    if (filterMembers.length > 0) {
+      const hasSelectedMember = card.members?.some(cm => filterMembers.includes(cm.user.id));
+      if (!hasSelectedMember) return false;
+    }
+
+    // 4. Due Date Filters (e.g., 'no_date', 'has_date' mock logic or next 24h depending on what user wants, for now we will just do has due date)
+    if (filterDueDate) {
+      if (!card.dueDate) return false;
+    }
+
+    return true;
   }) || [];
 
   return (
@@ -74,8 +110,15 @@ const List = ({ list, index, refreshBoard, searchQuery = '' }) => {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           style={provided.draggableProps.style}
-          className="bg-[#f1f2f4] rounded-xl w-[272px] shrink-0 max-h-full flex flex-col mr-3 shadow-sm text-[#172b4d]"
+          className="bg-[#f1f2f4] rounded-xl w-[272px] shrink-0 max-h-full flex flex-col mr-3 shadow-sm text-[#172b4d] relative"
         >
+          {/* Deletion Loading Overlay */}
+          {isDeletingListLoading && (
+            <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center rounded-xl backdrop-blur-[1px]">
+               <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+
           <div className="px-3 pt-3 pb-2 font-semibold text-sm text-[#172b4d] flex justify-between items-center group relative cursor-pointer">
             {isEditing ? (
               <input
@@ -84,11 +127,24 @@ const List = ({ list, index, refreshBoard, searchQuery = '' }) => {
                 value={listTitle}
                 onChange={(e) => setListTitle(e.target.value)}
                 onBlur={updateListTitle}
-                onKeyDown={(e) => e.key === 'Enter' && updateListTitle()}
-                className="w-full px-2 py-1 mr-2 rounded border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-sm"
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') updateListTitle();
+                    if (e.key === 'Escape') {
+                        setIsEditing(false);
+                        setListTitle(list.title);
+                    }
+                }}
+                disabled={isEditingTitleLoading}
+                className="w-full px-2 py-1 mr-2 rounded border-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold text-sm disabled:opacity-50"
               />
             ) : (
-              <span onClick={() => setIsEditing(true)} className="truncate pr-2 mt-0.5 cursor-pointer flex-1">{list.title}</span>
+              <h2
+                onClick={() => setIsEditing(true)}
+                className="font-semibold text-sm text-[#172b4d] px-2 py-1 cursor-pointer flex-1 break-words flex items-center gap-2"
+              >
+                {list.title}
+                {isEditingTitleLoading && <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>}
+              </h2>
             )}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -154,11 +210,22 @@ const List = ({ list, index, refreshBoard, searchQuery = '' }) => {
                     }
                   }}
                 />
-                <div className="flex items-center gap-2">
-                  <button onMouseDown={(e) => { e.preventDefault(); addCard(); }} className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors">
-                    Add card
-                  </button>
-                  <button onMouseDown={() => { setIsAddingCard(false); setNewCardTitle(''); }} className="p-1.5 text-gray-500 hover:text-gray-800 transition-colors">
+                <div className="flex items-center space-x-2 w-full">
+                <button 
+                  type="submit" 
+                  disabled={isAddingCardLoading}
+                  onMouseDown={(e) => { e.preventDefault(); addCard(); }}
+                  className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isAddingCardLoading ? (
+                     <>
+                       <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                       Adding...
+                     </>
+                  ) : 'Add card'}
+                </button>
+                <button
+                  type="button" onMouseDown={() => { setIsAddingCard(false); setNewCardTitle(''); }} className="p-1.5 text-gray-500 hover:text-gray-800 transition-colors">
                     ✕
                   </button>
                 </div>
