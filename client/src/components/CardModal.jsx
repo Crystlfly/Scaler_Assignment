@@ -9,7 +9,7 @@ import ModalBadges from './ModalComponents/ModalBadges';
 import ModalActivity from './ModalComponents/ModalActivity';
 import ModalAttachments from './ModalComponents/ModalAttachments';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
     const [card, setCard] = useState(null);

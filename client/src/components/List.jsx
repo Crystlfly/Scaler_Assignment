@@ -7,7 +7,7 @@ import ConfirmModal from './ModalComponents/ConfirmModal';
 import ListOptionsMenu from './ListComponents/ListOptionsMenu';
 import CreateCardForm from './ListComponents/CreateCardForm';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], filterMembers = [], filterDueDate = false }) => {
   const [isEditing, setIsEditing] = React.useState(false);

@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import CardModal from './CardModal';
 import ConfirmModal from './ModalComponents/ConfirmModal';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
   const [isHovering, setIsHovering] = useState(false);

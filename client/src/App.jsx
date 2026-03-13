@@ -3,10 +3,11 @@ import axios from 'axios';
 import { MdAdd, MdClose } from 'react-icons/md';
 import Navbar from './components/AppComponents/Navbar';
 import BoardHeader from './components/AppComponents/BoardHeader';
+import AddListForm from './components/AppComponents/AddListForm';
 import ConfirmModal from './components/ModalComponents/ConfirmModal';
 import Board from './components/Board';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 function App() {
   const [board, setBoard] = useState(null);
