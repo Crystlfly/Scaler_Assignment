@@ -113,7 +113,7 @@ const ModalBadges = ({
                                     const isLoading = isAssigningLabelLoading === l.id || isRemovingLabelLoading === l.id;
                                     return (
                                         <div key={l.id} onClick={() => !isLoading && (isAssigned ? removeLabel(l.id) : assignLabel(l.id))} className={`px-2 py-1.5 rounded flex items-center justify-between text-white font-medium cursor-pointer ${isLoading ? 'opacity-70' : 'hover:opacity-90'}`} style={{ backgroundColor: l.color }}>
-                                            {l.title} 
+                                            {l.title}
                                             {isLoading ? <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : (isAssigned ? <FiCheck size={14} /> : <FiPlus size={14} />)}
                                         </div>
                                     );

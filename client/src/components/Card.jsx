@@ -9,12 +9,10 @@ import ConfirmModal from './ModalComponents/ConfirmModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
+const Card = ({ board, setBoard, card, index, refreshBoard, listTitle, boardId }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeletingLoading, setIsDeletingLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isTogglingComplete, setIsTogglingComplete] = useState(false);
 
   const deleteCard = (e) => {
     e.stopPropagation();
@@ -22,30 +20,80 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
   };
 
   const confirmDeleteCard = async () => {
-    setIsDeletingLoading(true);
+    const listId = card.listId;
+    const previousCards = board.lists.find(l => l.id === listId)?.cards || [];
+    
+    // Optimistic Update
+    setBoard(prev => ({
+        ...prev,
+        lists: prev.lists.map(l => 
+            l.id === listId 
+            ? { ...l, cards: l.cards.filter(c => c.id !== card.id) }
+            : l
+        )
+    }));
+    setIsDeleteModalOpen(false);
+
     try {
       await axios.delete(`${API_URL}/cards/${card.id}`);
-      await refreshBoard();
     } catch (error) {
       console.error("Failed to delete card:", error);
-    } finally {
-      setIsDeletingLoading(false);
-      setIsDeleteModalOpen(false);
+      // Rollback
+      setBoard(prev => ({
+          ...prev,
+          lists: prev.lists.map(l => 
+              l.id === listId 
+              ? { ...l, cards: previousCards }
+              : l
+          )
+      }));
     }
   };
 
   const toggleComplete = async (e) => {
     e.stopPropagation();
-    setIsTogglingComplete(true);
+    const listId = card.listId;
+    const previousState = card.isComplete;
+    
+    // Optimistic Update
+    setBoard(prev => ({
+        ...prev,
+        lists: prev.lists.map(l => 
+            l.id === listId 
+            ? { 
+                ...l, 
+                cards: l.cards.map(c => 
+                    c.id === card.id 
+                    ? { ...c, isComplete: !previousState } 
+                    : c
+                ) 
+              }
+            : l
+        )
+    }));
+
     try {
       await axios.put(`${API_URL}/cards/${card.id}`, {
-        isComplete: !card.isComplete
+        isComplete: !previousState
       });
-      await refreshBoard();
     } catch (error) {
       console.error("Failed to toggle card completion:", error);
-    } finally {
-      setIsTogglingComplete(false);
+      // Rollback
+      setBoard(prev => ({
+          ...prev,
+          lists: prev.lists.map(l => 
+              l.id === listId 
+              ? { 
+                  ...l, 
+                  cards: l.cards.map(c => 
+                      c.id === card.id 
+                      ? { ...c, isComplete: previousState } 
+                      : c
+                  ) 
+                }
+              : l
+          )
+      }));
     }
   };
 
@@ -104,15 +152,10 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
 
             {/* Inner Content Padding Wrapper */}
             <div className="p-2.5">
-            {/* Deletion Loading Overlay */}
-            {isDeletingLoading && (
-              <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center rounded-lg">
-                <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
+            {/* Deletion Loading Overlay Removed for Optimistic UI */}
 
             {/* Edit/Delete pencil indicator (Simplified to just delete for now mock) */}
-            {isHovering && !snapshot.isDragging && !isDeletingLoading && (
+            {isHovering && !snapshot.isDragging && (
               <button
                 onClick={deleteCard}
                 onMouseDown={(e) => e.stopPropagation()}
@@ -139,15 +182,13 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
             {/* Title with Hover to Complete Toggle */}
             <div className="flex items-start gap-1.5 mb-1 pr-6 relative">
               {/* Completion Icon */}
-              {(isHovering || card.isComplete || isTogglingComplete) && (
+              {(isHovering || card.isComplete) && (
                 <div 
                   onClick={toggleComplete}
                   className="mt-[3px] shrink-0 cursor-pointer z-20 text-gray-400 hover:text-gray-700 transition-colors"
                   title={card.isComplete ? "Mark as incomplete" : "Mark as complete"}
                 >
-                  {isTogglingComplete ? (
-                    <div className="w-[14px] h-[14px] border-[2px] border-current border-t-transparent rounded-full animate-spin"></div>
-                  ) : card.isComplete ? (
+                  {card.isComplete ? (
                     <FiCheckCircle size={14} className="text-green-600" />
                   ) : (
                     <FiCircle size={14} />
@@ -221,7 +262,6 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
       title="Delete Card"
       message={`Are you sure you want to delete the card "${card.title}"? This action cannot be undone.`}
       confirmText="Delete Card"
-      isLoading={isDeletingLoading}
     />
     </>
   );

@@ -10,7 +10,7 @@ import { isPast, differenceInHours } from 'date-fns';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], filterMembers = [], filterDueDate = false }) => {
+const List = ({ board, setBoard, list, index, refreshBoard, searchQuery = '', filterLabels = [], filterMembers = [], filterDueDate = false }) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const [listTitle, setListTitle] = React.useState(list.title);
   const [isAddingCard, setIsAddingCard] = React.useState(false);
@@ -32,20 +32,59 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
       return;
     }
     
-    setIsAddingCardLoading(true);
+    const tempId = "temp-" + Date.now();
+    const tempCard = {
+      id: tempId,
+      title: newCardTitle,
+      listId: list.id,
+      order: list.cards && list.cards.length > 0 
+             ? list.cards[list.cards.length - 1].order + 1000 
+             : 1000,
+      labels: [],
+      members: [],
+      checklists: []
+    };
+
+    // Optimistic Update
+    setBoard(prev => ({
+        ...prev,
+        lists: prev.lists.map(l => 
+            l.id === list.id 
+            ? { ...l, cards: [...(l.cards || []), tempCard] }
+            : l
+        )
+    }));
+
+    const savedTitle = newCardTitle;
+    setNewCardTitle('');
+    
+    // Refocus the input smoothly for continuous creation
+    setTimeout(() => {
+    cardInputRef.current?.focus();
+    }, 0);
 
     try {
-      await axios.post(`${API_URL}/cards`, { title: newCardTitle, listId: list.id });
-      await refreshBoard();
-      setNewCardTitle('');
-      // Refocus the input smoothly for continuous creation
-      setTimeout(() => {
-        cardInputRef.current?.focus();
-      }, 0);
+      const res = await axios.post(`${API_URL}/cards`, { title: savedTitle, listId: list.id });
+      // Replace temp id silently
+      setBoard(prev => ({
+          ...prev,
+          lists: prev.lists.map(l => 
+              l.id === list.id 
+              ? { ...l, cards: l.cards.map(c => c.id === tempId ? { ...c, id: res.data.id } : c) }
+              : l
+          )
+      }));
     } catch (error) {
       console.error("Failed to add card:", error);
-    } finally {
-      setIsAddingCardLoading(false);
+      // Rollback
+      setBoard(prev => ({
+          ...prev,
+          lists: prev.lists.map(l => 
+              l.id === list.id 
+              ? { ...l, cards: l.cards.filter(c => c.id !== tempId) }
+              : l
+          )
+      }));
     }
   };
 
@@ -55,35 +94,56 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
   };
 
   const confirmDeleteList = async () => {
-    setIsDeletingListLoading(true);
+    const previousLists = [...(board.lists || [])];
+    
+    // Optimistic Update
+    setBoard(prev => ({
+        ...prev,
+        lists: prev.lists.filter(l => l.id !== list.id)
+    }));
+    setIsDeleteModalOpen(false);
+
     try {
       await axios.delete(`${API_URL}/lists/${list.id}`);
-      await refreshBoard();
     } catch (error) {
       console.error("Failed to delete list:", error);
-    } finally {
-      setIsDeletingListLoading(false);
-      setIsDeleteModalOpen(false);
+      // Rollback
+      setBoard(prev => ({ ...prev, lists: previousLists }));
     }
   };
 
   const updateListTitle = async () => {
-    if (listTitle.trim() && listTitle !== list.title) {
-      setIsEditingTitleLoading(true);
-      try {
-        await axios.put(`${API_URL}/lists/${list.id}`, { title: listTitle });
-        await refreshBoard();
-      } catch (error) {
-        console.error("Failed to update list:", error);
-      } finally {
-        setIsEditingTitleLoading(false);
+    if (!listTitle.trim() || listTitle === list.title) {
+        setListTitle(list.title);
         setIsEditing(false);
-      }
-    } else {
-      setListTitle(list.title);
-      setIsEditing(false);
+        return;
     }
-  }
+
+    const previousTitle = list.title;
+    
+    // Optimistic Update
+    setBoard(prev => ({
+        ...prev,
+        lists: prev.lists.map(l => 
+            l.id === list.id ? { ...l, title: listTitle } : l
+        )
+    }));
+    setIsEditing(false);
+
+    try {
+      await axios.put(`${API_URL}/lists/${list.id}`, { title: listTitle });
+    } catch (error) {
+      console.error("Failed to update list:", error);
+      // Rollback
+      setBoard(prev => ({
+          ...prev,
+          lists: prev.lists.map(l => 
+              l.id === list.id ? { ...l, title: previousTitle } : l
+          )
+      }));
+      setListTitle(previousTitle);
+    }
+  };
 
   const filteredCards = list.cards?.filter(card => {
     // 1. Keyword Text Search
@@ -143,12 +203,7 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
           style={provided.draggableProps.style}
           className="bg-[#f1f2f4] rounded-xl w-full sm:w-[300px] shrink-0 max-h-full flex flex-col md:mr-3 shadow-sm text-[#172b4d] relative"
         >
-          {/* Deletion Loading Overlay */}
-          {isDeletingListLoading && (
-            <div className="absolute inset-0 bg-white/50 z-50 flex items-center justify-center rounded-xl backdrop-blur-[1px]">
-               <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          )}
+          {/* Deletion Loading Overlay Removed for Optimistic UI */}
 
           <div className="px-3 pt-3 pb-2 font-semibold text-sm text-[#172b4d] flex justify-between items-center group relative cursor-pointer">
             {isEditing ? (
@@ -174,7 +229,6 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
                 className="font-semibold text-sm text-[#172b4d] px-2 py-1 cursor-pointer flex-1 break-words flex items-center gap-2"
               >
                 {list.title}
-                {isEditingTitleLoading && <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>}
               </h2>
             )}
             <button
@@ -203,7 +257,7 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
                   }`}
               >
                 {filteredCards.map((card, i) => (
-                  <Card key={card.id} card={card} index={i} refreshBoard={refreshBoard} listTitle={list.title} boardId={list.boardId} />
+                  <Card key={card.id} board={board} setBoard={setBoard} card={card} index={i} refreshBoard={refreshBoard} listTitle={list.title} boardId={list.boardId} />
                 ))}
                 {provided.placeholder}
               </div>
@@ -231,7 +285,6 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
       title="Delete List"
       message={`Are you sure you want to delete the list "${list.title}"? This action cannot be undone and all cards inside will be lost.`}
       confirmText="Delete List"
-      isLoading={isDeletingListLoading}
     />
     </>
   );

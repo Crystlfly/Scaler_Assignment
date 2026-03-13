@@ -77,11 +77,27 @@ function App() {
   };
 
   const handleCreateBoard = async (title) => {
+    const tempId = "temp-" + Date.now();
+    const tempBoard = { id: tempId, title, background: '#0079bf' };
+    
+    // Optimistic Update
+    setBoards(prev => [tempBoard, ...prev]);
+    setBoard(tempBoard);
+
     try {
       const res = await axios.post(`${API_URL}/boards`, { title: title, background: '#0079bf' });
-      fetchBoardsAndActive(res.data.id);
+      // Replace temp board with real board silently
+      setBoards(prev => prev.map(b => b.id === tempId ? res.data : b));
+      if (board?.id === tempId || !board) setBoard(res.data);
+      localStorage.setItem('activeBoardId', res.data.id);
     } catch (err) {
       console.error(err);
+      // Rollback
+      setBoards(prev => prev.filter(b => b.id !== tempId));
+      if (board?.id === tempId) {
+          setBoard(null);
+          localStorage.removeItem('activeBoardId');
+      }
     }
   };
 
@@ -89,41 +105,68 @@ function App() {
     e.preventDefault();
     if (!newListTitle.trim()) return;
 
-    setIsAddingListLoading(true);
+    const tempId = "temp-" + Date.now();
+    const newList = {
+        id: tempId,
+        title: newListTitle,
+        boardId: board.id,
+        cards: [],
+        order: board.lists && board.lists.length > 0 
+               ? board.lists[board.lists.length - 1].order + 1000 
+               : 1000
+    };
+
+    // Optimistic Update
+    setBoard(prev => ({ ...prev, lists: [...(prev.lists || []), newList] }));
+    const savedTitle = newListTitle;
+    setNewListTitle('');
+    // Keep continuous input open
+    // setIsAddingList(false);
 
     try {
-      await axios.post(`${API_URL}/lists`, {
-        title: newListTitle,
+      const res = await axios.post(`${API_URL}/lists`, {
+        title: savedTitle,
         boardId: board.id
       });
-      await fetchBoard();
-      setNewListTitle('');
-      setIsAddingList(false);
+      // Replace temp ID with real ID
+      setBoard(prev => ({
+          ...prev,
+          lists: prev.lists.map(l => l.id === tempId ? { ...l, id: res.data.id } : l)
+      }));
     } catch (err) {
       console.error('Error adding list', err);
-    } finally {
-      setIsAddingListLoading(false);
+      // Rollback
+      setBoard(prev => ({
+          ...prev,
+          lists: prev.lists.filter(l => l.id !== tempId)
+      }));
     }
   };
 
 
 
   const handleUpdateBoardTitle = async () => {
-    setIsUpdatingBoardTitleLoading(true);
-    try {
-      if (editBoardTitle.trim() && editBoardTitle !== board.title) {
-        await axios.put(`${API_URL}/boards/${board.id}`, { title: editBoardTitle });
-        setBoard(prev => ({ ...prev, title: editBoardTitle }));
-        await fetchBoardsAndActive(board.id);
-      } else {
+    if (!editBoardTitle.trim() || editBoardTitle === board.title) {
+        setIsEditingBoard(false);
         setEditBoardTitle(board.title);
-      }
+        return;
+    }
+
+    const previousTitle = board.title;
+    
+    // Optimistic Update
+    setBoard(prev => ({ ...prev, title: editBoardTitle }));
+    setIsEditingBoard(false);
+
+    try {
+      await axios.put(`${API_URL}/boards/${board.id}`, { title: editBoardTitle });
+      // Silently update boards list names
+      setBoards(prev => prev.map(b => b.id === board.id ? { ...b, title: editBoardTitle } : b));
     } catch (error) {
       console.error("Failed to update board:", error);
-      setEditBoardTitle(board.title);
-    } finally {
-      setIsUpdatingBoardTitleLoading(false);
-      setIsEditingBoard(false);
+      // Rollback
+      setBoard(prev => ({ ...prev, title: previousTitle }));
+      setEditBoardTitle(previousTitle);
     }
   };
 
@@ -132,13 +175,32 @@ function App() {
   };
 
   const confirmDeleteBoard = async () => {
+    const deletedId = board.id;
+    const previousBoards = [...boards];
+    const newBoards = boards.filter(b => b.id !== deletedId);
+    
+    // Optimistic Update
+    setBoards(newBoards);
+    setIsDeleteDialogOpen(false);
+
+    let nextBoardId = null;
+    if (newBoards.length > 0) {
+        nextBoardId = newBoards[0].id;
+        localStorage.setItem('activeBoardId', nextBoardId);
+        fetchBoardsAndActive(nextBoardId); // Fetch the new active board
+    } else {
+        setBoard(null);
+        localStorage.removeItem('activeBoardId');
+    }
+
     try {
-      await axios.delete(`${API_URL}/boards/${board.id}`);
-      localStorage.removeItem('activeBoardId');
-      setIsDeleteDialogOpen(false);
-      fetchBoardsAndActive();
+      await axios.delete(`${API_URL}/boards/${deletedId}`);
     } catch (error) {
       console.error("Failed to delete board:", error);
+      // Rollback
+      setBoards(previousBoards);
+      setBoard(previousBoards.find(b => b.id === deletedId));
+      localStorage.setItem('activeBoardId', deletedId);
     }
   };
 

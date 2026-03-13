@@ -4,7 +4,7 @@ const AttachmentPicker = ({ handleAttach, attachNextUrl, setAttachNextUrl, attac
     return (
         <form onSubmit={handleAttach} className="absolute top-10 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-3 w-64 z-20">
             <h4 className="text-xs font-semibold text-gray-500 mb-3 text-center border-b pb-2">Attach a link</h4>
-            
+
             <label className="block text-xs font-bold text-[#5e6c84] mb-1">Search or paste a link</label>
             <input
                 autoFocus
@@ -15,7 +15,7 @@ const AttachmentPicker = ({ handleAttach, attachNextUrl, setAttachNextUrl, attac
                 className="w-full px-2 py-1.5 mb-2 rounded border-2 border-blue-500 focus:outline-none text-sm bg-gray-50"
                 disabled={isAddingAttachmentLoading}
             />
-            
+
             {attachNextUrl && (
                 <>
                     <label className="block text-xs font-bold text-[#5e6c84] mb-1 mt-2">Display text</label>
@@ -30,7 +30,7 @@ const AttachmentPicker = ({ handleAttach, attachNextUrl, setAttachNextUrl, attac
                 </>
             )}
 
-            <button 
+            <button
                 type="submit"
                 disabled={isAddingAttachmentLoading || !attachNextUrl.trim()}
                 className="w-full mt-2 bg-[#0c66e4] hover:bg-[#0055cc] text-white py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"

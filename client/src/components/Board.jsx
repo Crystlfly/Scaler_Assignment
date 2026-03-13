@@ -115,6 +115,8 @@ const Board = ({
               {board?.lists?.map((list, index) => (
                 <List
                   key={list.id}
+                  board={board}
+                  setBoard={setBoard}
                   list={list}
                   index={index}
                   refreshBoard={fetchBoard}

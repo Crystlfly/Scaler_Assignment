@@ -85,8 +85,8 @@ const ModalSidebar = ({
                                     onChange={(e) => setNewChecklistTitle(e.target.value)}
                                     className="w-full px-2 py-1 mb-2 rounded border-2 border-blue-500 focus:outline-none text-sm"
                                 />
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={isAddingChecklistLoading}
                                     className="bg-[#0c66e4] text-white w-full py-1 rounded text-sm font-medium flex justify-center items-center gap-2 disabled:opacity-50"
                                 >

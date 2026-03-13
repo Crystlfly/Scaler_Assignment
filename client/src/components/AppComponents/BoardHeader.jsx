@@ -43,7 +43,6 @@ const BoardHeader = ({
               }
             }}
             className="text-[18px] font-bold text-[#172b4d] px-3 py-1.5 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-            disabled={isUpdatingBoardTitleLoading}
           />
         ) : (
           <h1
@@ -54,7 +53,6 @@ const BoardHeader = ({
             className="text-[18px] font-bold text-white bg-[#ffffff29] px-3 py-1.5 rounded cursor-pointer hover:bg-[#ffffff3d] backdrop-blur-sm transition-colors flex items-center gap-2"
           >
             {board.title}
-            {isUpdatingBoardTitleLoading && <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>}
           </h1>
         )}
       </div>

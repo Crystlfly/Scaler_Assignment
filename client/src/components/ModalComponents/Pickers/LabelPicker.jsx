@@ -7,7 +7,7 @@ const LabelPicker = ({ dbLabels, assignLabel, isAssigningLabelLoading }) => {
             <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Labels</div>
             {dbLabels.map(l => (
                 <div key={l.id} onClick={() => isAssigningLabelLoading !== l.id && assignLabel(l.id)} className={`px-2 py-1.5 rounded flex items-center justify-between text-white font-medium cursor-pointer ${isAssigningLabelLoading === l.id ? 'opacity-70' : ''}`} style={{ backgroundColor: l.color }}>
-                    {l.title} 
+                    {l.title}
                     {isAssigningLabelLoading === l.id ? <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <FiPlus size={14} />}
                 </div>
             ))}

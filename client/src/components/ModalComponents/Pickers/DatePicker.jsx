@@ -12,16 +12,16 @@ const DatePicker = ({ dueDateInput, setDueDateInput, updateDueDate, isUpdatingDu
                 className="w-full px-2 py-1.5 mb-3 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-sm"
             />
             <div className="flex flex-col gap-2">
-                <button 
-                    onClick={() => updateDueDate(dueDateInput ? `${dueDateInput}T12:00:00Z` : null)} 
+                <button
+                    onClick={() => updateDueDate(dueDateInput ? `${dueDateInput}T12:00:00Z` : null)}
                     disabled={isUpdatingDueDateLoading}
                     className="flex items-center justify-center gap-2 bg-[#0c66e4] text-white hover:bg-[#0055cc] w-full py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
                 >
                     {isUpdatingDueDateLoading && dueDateInput && <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />}
                     Save
                 </button>
-                <button 
-                    onClick={() => updateDueDate(null)} 
+                <button
+                    onClick={() => updateDueDate(null)}
                     disabled={isUpdatingDueDateLoading}
                     className="flex items-center justify-center gap-2 w-full py-1.5 rounded text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >

@@ -7,7 +7,6 @@ const CreateCardForm = ({
     newCardTitle,
     setNewCardTitle,
     addCard,
-    isAddingCardLoading,
     inputRef
 }) => {
     return (
@@ -41,16 +40,10 @@ const CreateCardForm = ({
                     <div className="flex items-center space-x-2 w-full">
                         <button
                             type="submit"
-                            disabled={isAddingCardLoading}
                             onMouseDown={(e) => { e.preventDefault(); addCard(); }}
-                            className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                            className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors flex items-center gap-2"
                         >
-                            {isAddingCardLoading ? (
-                                <>
-                                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Adding...
-                                </>
-                            ) : 'Add card'}
+                            Add card
                         </button>
                         <button
                             type="button"

@@ -106,176 +106,341 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
     };
 
     const updateTitle = async () => {
-        setIsUpdatingTitleLoading(true);
-        try {
-             if (editTitleContent.trim() && editTitleContent.trim() !== card.title) {
-                await axios.put(`${API_URL}/cards/${card.id}`, { title: editTitleContent.trim() });
-                await fetchCard();
-                await refreshBoard();
-             } else {
-                setEditTitleContent(card.title);
-             }
-             setIsEditingTitle(false);
-        } catch (error) {
-             console.error("Failed to update title:", error);
+         if (!editTitleContent.trim() || editTitleContent.trim() === card.title) {
              setEditTitleContent(card.title);
-        } finally {
-             setIsUpdatingTitleLoading(false);
-        }
-    }
+             setIsEditingTitle(false);
+             return;
+         }
+
+         const previousTitle = card.title;
+         
+         // Optimistic Update
+         setCard(prev => ({ ...prev, title: editTitleContent.trim() }));
+         setIsEditingTitle(false);
+
+         try {
+             await axios.put(`${API_URL}/cards/${card.id}`, { title: editTitleContent.trim() });
+             await refreshBoard();
+         } catch (error) {
+             console.error("Failed to update title:", error);
+             // Rollback
+             setCard(prev => ({ ...prev, title: previousTitle }));
+             setEditTitleContent(previousTitle);
+         }
+    };
 
     const updateDescription = async () => {
-        setIsUpdatingDescLoading(true);
-        try {
-            // Only update if content has changed
-            if (editDescContent.trim() !== card.description) {
-                await axios.put(`${API_URL}/cards/${card.id}`, { description: editDescContent });
-                await fetchCard();
-                await refreshBoard(); // Keep refreshBoard as it was in the original
-            }
+        if (!editDescContent.trim() || editDescContent.trim() === card.description) {
             setIsEditingDescription(false);
+            return;
+        }
+
+        const previousDesc = card.description;
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, description: editDescContent }));
+        setIsEditingDescription(false);
+
+        try {
+            await axios.put(`${API_URL}/cards/${card.id}`, { description: editDescContent });
+            await refreshBoard();
         } catch (error) {
             console.error(error);
-        } finally {
-            setIsUpdatingDescLoading(false);
+            // Rollback
+            setCard(prev => ({ ...prev, description: previousDesc }));
+            setEditDescContent(previousDesc);
         }
-    }
+    };
 
     const updateDueDate = async (isoDate) => {
-        setIsUpdatingDueDateLoading(true);
+        const previousDueDate = card.dueDate;
+        
+        // Optimistic Update
+        setCard(prev => ({ ...prev, dueDate: isoDate }));
+        setActivePopover(null);
+
         try {
             await axios.put(`${API_URL}/cards/${card.id}`, { dueDate: isoDate });
-            await fetchCard();
             await refreshBoard();
-            setActivePopover(null);
-        } catch (e) { alert("Failed to update due date."); }
-        finally { setIsUpdatingDueDateLoading(false); }
+        } catch (e) { 
+            console.error("Failed to update due date.", e);
+            // Rollback
+            setCard(prev => ({ ...prev, dueDate: previousDueDate }));
+        }
     }
 
     const updateCover = async (coverUrlOrHex) => {
-        setIsUpdatingCoverLoading(true);
+        const previousCover = card.cover;
+        
+        // Optimistic Update
+        setCard(prev => ({ ...prev, cover: coverUrlOrHex }));
+        setActivePopover(null);
+
         try {
             await axios.put(`${API_URL}/cards/${card.id}`, { cover: coverUrlOrHex });
-            await fetchCard();
             await refreshBoard();
-        } catch (e) { alert("Failed to update cover."); }
-        finally { setIsUpdatingCoverLoading(false); }
+        } catch (e) {
+             console.error("Failed to update cover.", e);
+             // Rollback
+             setCard(prev => ({ ...prev, cover: previousCover }));
+        }
     }
 
     const addComment = async (text) => {
-        setIsAddingCommentLoading(true);
+        const tempId = "temp-" + Date.now();
+        const tempComment = {
+            id: tempId,
+            text,
+            authorName: "Demo User",
+            createdAt: new Date().toISOString()
+        };
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, comments: [tempComment, ...(prev.comments || [])] }));
+
         try {
-            await axios.post(`${API_URL}/cards/${card.id}/comments`, { text, authorName: "Demo User" });
-            await fetchCard();
+            const res = await axios.post(`${API_URL}/cards/${card.id}/comments`, { text, authorName: "Demo User" });
+            // Swap temp comment with real
+            setCard(prev => ({
+                ...prev,
+                comments: prev.comments.map(c => c.id === tempId ? res.data : c)
+            }));
             await refreshBoard();
-        } catch (e) { alert("Failed to add comment."); }
-        finally { setIsAddingCommentLoading(false); }
+        } catch (e) { 
+            console.error("Failed to add comment.", e);
+            // Rollback
+            setCard(prev => ({ ...prev, comments: prev.comments.filter(c => c.id !== tempId) }));
+        }
     };
 
     const addAttachment = async (url, name) => {
-        setIsAddingAttachmentLoading(true);
+        const tempId = "temp-" + Date.now();
+        const tempAttachment = {
+            id: tempId,
+            url,
+            name,
+            createdAt: new Date().toISOString()
+        };
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, attachments: [tempAttachment, ...(prev.attachments || [])] }));
+        setActivePopover(null);
+
         try {
-            await axios.post(`${API_URL}/cards/${card.id}/attachments`, { url, name });
-            setActivePopover(null);
-            await fetchCard();
+            const res = await axios.post(`${API_URL}/cards/${card.id}/attachments`, { url, name });
+            // Swap temp attachment with real
+            setCard(prev => ({
+                ...prev,
+                attachments: prev.attachments.map(a => a.id === tempId ? res.data : a)
+            }));
             await refreshBoard();
-        } catch (e) { alert("Failed to add attachment."); }
-        finally { setIsAddingAttachmentLoading(false); }
+        } catch (e) { 
+            console.error("Failed to add attachment.", e);
+            // Rollback
+            setCard(prev => ({ ...prev, attachments: prev.attachments.filter(a => a.id !== tempId) }));
+        }
     };
 
     const addChecklist = async (e) => {
         e?.preventDefault();
-        if (newChecklistTitle.trim()) {
-            setIsAddingChecklistLoading(true);
-            try {
-                await axios.post(`${API_URL}/cards/${card.id}/checklists`, { title: newChecklistTitle });
-                setNewChecklistTitle('Tasks');
-                await fetchCard();
-                await refreshBoard();
-            } catch (err) {
-                console.error("Failed to add checklist", err);
-            } finally {
-                setIsAddingChecklistLoading(false);
-                setActivePopover(null);
-            }
-        } else {
+        if (!newChecklistTitle.trim()) {
             setActivePopover(null);
+            return;
+        }
+
+        const tempId = "temp-" + Date.now();
+        const tempChecklist = {
+            id: tempId,
+            title: newChecklistTitle,
+            items: []
+        };
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, checklists: [...(prev.checklists || []), tempChecklist] }));
+        const savedTitle = newChecklistTitle;
+        setNewChecklistTitle('Tasks');
+        setActivePopover(null);
+
+        try {
+            const res = await axios.post(`${API_URL}/cards/${card.id}/checklists`, { title: savedTitle });
+            // Swap temp checklist with real
+            setCard(prev => ({
+                ...prev,
+                checklists: prev.checklists.map(cl => cl.id === tempId ? res.data : cl)
+            }));
+            await refreshBoard();
+        } catch (err) {
+            console.error("Failed to add checklist", err);
+            // Rollback
+            setCard(prev => ({ ...prev, checklists: prev.checklists.filter(cl => cl.id !== tempId) }));
         }
     }
 
     const addChecklistItem = async (checklistId, e) => {
         e?.preventDefault();
-        if (newItemContent.trim()) {
-            setIsAddingItemLoading(true);
-            try {
-                await axios.post(`${API_URL}/checklists/${checklistId}/items`, { content: newItemContent });
-                setNewItemContent('');
-                await fetchCard();
-                await refreshBoard();
-            } catch (err) {
-                 console.error("Failed to add item", err);
-            } finally {
-                 setIsAddingItemLoading(false);
-                 setAddingItemId(null);
-            }
-        } else {
+        if (!newItemContent.trim()) {
             setAddingItemId(null);
+            return;
+        }
+
+        const tempId = "temp-" + Date.now();
+        const tempItem = {
+            id: tempId,
+            content: newItemContent,
+            isCompleted: false
+        };
+
+        // Optimistic Update
+        setCard(prev => ({
+            ...prev,
+            checklists: prev.checklists.map(cl => 
+                cl.id === checklistId 
+                ? { ...cl, items: [...(cl.items || []), tempItem] }
+                : cl
+            )
+        }));
+        const savedContent = newItemContent;
+        setNewItemContent('');
+        setAddingItemId(null);
+
+        try {
+            const res = await axios.post(`${API_URL}/checklists/${checklistId}/items`, { content: savedContent });
+            // Swap temp item with real
+            setCard(prev => ({
+                ...prev,
+                checklists: prev.checklists.map(cl => 
+                    cl.id === checklistId 
+                    ? { ...cl, items: cl.items.map(i => i.id === tempId ? res.data : i) }
+                    : cl
+                )
+            }));
+            await refreshBoard();
+        } catch (err) {
+             console.error("Failed to add item", err);
+             // Rollback
+             setCard(prev => ({
+                 ...prev,
+                 checklists: prev.checklists.map(cl => 
+                     cl.id === checklistId 
+                     ? { ...cl, items: cl.items.filter(i => i.id !== tempId) }
+                     : cl
+                 )
+             }));
         }
     }
 
     const toggleChecklistItem = async (item) => {
-        setTogglingItemId(item.id);
+        const previousState = item.isCompleted;
+
+        // Optimistic Update
+        setCard(prev => ({
+            ...prev,
+            checklists: prev.checklists.map(cl => ({
+                ...cl,
+                items: cl.items.map(i => i.id === item.id ? { ...i, isCompleted: !previousState } : i)
+            }))
+        }));
+
         try {
             await axios.put(`${API_URL}/checklists/items/${item.id}`, { isCompleted: !item.isCompleted });
-            await fetchCard();
             await refreshBoard();
         } catch (err) {
             console.error("Failed to toggle item", err);
-        } finally {
-            setTogglingItemId(null);
+            // Rollback
+            setCard(prev => ({
+                ...prev,
+                checklists: prev.checklists.map(cl => ({
+                    ...cl,
+                    items: cl.items.map(i => i.id === item.id ? { ...i, isCompleted: previousState } : i)
+                }))
+            }));
         }
     }
 
     const assignMember = async (userId) => {
-        setIsAssigningMemberLoading(userId);
+        const userToAdd = dbUsers.find(u => u.id === userId);
+        if (!userToAdd) return;
+
+        const tempMember = {
+            id: `temp-${Date.now()}`,
+            user: userToAdd
+        };
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, members: [...(prev.members || []), tempMember] }));
+
         try {
-            await axios.post(`${API_URL}/cards/${card.id}/members`, { userId });
-            // setShowMembers(false); // keep open for multiple
-            await fetchCard();
+            const res = await axios.post(`${API_URL}/cards/${card.id}/members`, { userId });
+            // Swap temp member with real
+            setCard(prev => ({
+                ...prev,
+                members: prev.members.map(m => m.id === tempMember.id ? res.data : m)
+            }));
             await refreshBoard();
-        } catch (e) { alert("Failed to add member."); }
-        finally { setIsAssigningMemberLoading(null); }
+        } catch (e) { 
+            console.error("Failed to add member.", e);
+            // Rollback
+            setCard(prev => ({ ...prev, members: prev.members.filter(m => m.id !== tempMember.id) }));
+        }
     }
 
     const removeMember = async (userId) => {
-        setIsRemovingMemberLoading(userId);
+        const previousMembers = [...(card.members || [])];
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, members: prev.members.filter(m => m.user.id !== userId) }));
+
         try {
             await axios.delete(`${API_URL}/cards/${card.id}/members/${userId}`);
-            await fetchCard();
             await refreshBoard();
-        } catch (e) { alert("Failed to remove member."); }
-        finally { setIsRemovingMemberLoading(null); }
+        } catch (e) { 
+            console.error("Failed to remove member.", e);
+            // Rollback
+            setCard(prev => ({ ...prev, members: previousMembers }));
+        }
     }
 
     const assignLabel = async (labelId) => {
-        setIsAssigningLabelLoading(labelId);
+        const labelToAdd = dbLabels.find(l => l.id === labelId);
+        if (!labelToAdd) return;
+
+        const tempLabel = {
+            id: `temp-${Date.now()}`,
+            label: labelToAdd
+        };
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, labels: [...(prev.labels || []), tempLabel] }));
+
         try {
-            await axios.post(`${API_URL}/cards/${card.id}/labels`, { labelId });
-            // setShowLabels(false); // keep open to toggle multiple
-            await fetchCard();
+            const res = await axios.post(`${API_URL}/cards/${card.id}/labels`, { labelId });
+            // Swap temp label with real
+            setCard(prev => ({
+                ...prev,
+                labels: prev.labels.map(l => l.id === tempLabel.id ? res.data : l)
+            }));
             await refreshBoard();
-        } catch (e) { alert("Failed to add label."); }
-        finally { setIsAssigningLabelLoading(null); }
+        } catch (e) { 
+            console.error("Failed to add label.", e);
+            // Rollback
+            setCard(prev => ({ ...prev, labels: prev.labels.filter(l => l.id !== tempLabel.id) }));
+        }
     }
 
     const removeLabel = async (labelId) => {
-        setIsRemovingLabelLoading(labelId);
+        const previousLabels = [...(card.labels || [])];
+
+        // Optimistic Update
+        setCard(prev => ({ ...prev, labels: prev.labels.filter(l => l.label.id !== labelId) }));
+
         try {
             await axios.delete(`${API_URL}/cards/${card.id}/labels/${labelId}`);
-            await fetchCard();
             await refreshBoard();
-        } catch (e) { alert("Failed to remove label."); }
-        finally { setIsRemovingLabelLoading(null); }
+        } catch (e) { 
+            console.error("Failed to remove label.", e);
+            // Rollback
+            setCard(prev => ({ ...prev, labels: previousLabels }));
+        }
     }
 
     if (loading) {
@@ -347,7 +512,6 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                                         className="text-xl font-semibold cursor-pointer hover:bg-[#091e4214] flex items-center gap-2 rounded px-2 py-0.5 -ml-2"
                                     >
                                         {card.title}
-                                        {isUpdatingTitleLoading && <div className="w-4 h-4 border-2 border-blue-500 border-t-blue-200 rounded-full animate-spin"></div>}
                                     </h2>
                                 )}
                             <p className="text-sm text-gray-500 mt-1">
@@ -381,7 +545,6 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                         editDescContent={editDescContent}
                         setEditDescContent={setEditDescContent}
                         updateDescription={updateDescription}
-                        isUpdatingDescLoading={isUpdatingDescLoading}
                     />
 
                     {/* Attachments Section */}
@@ -406,7 +569,6 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                     <ModalActivity
                         card={card}
                         addComment={addComment}
-                        isAddingCommentLoading={isAddingCommentLoading}
                     />
 
                 </div>
