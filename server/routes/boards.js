@@ -53,7 +53,17 @@ router.post("/", async (req, res) => {
   try {
     const { title, background } = req.body;
     const board = await prisma.board.create({
-      data: { title, background: background || "#0079bf" },
+      data: { 
+        title, 
+        background: background || "#0079bf",
+        lists: {
+          create: [
+            { title: "TODO", order: 1000 },
+            { title: "In Progress", order: 2000 },
+            { title: "Done", order: 3000 }
+          ]
+        }
+      },
     });
     res.status(201).json(board);
   } catch (error) {

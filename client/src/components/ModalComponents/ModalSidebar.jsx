@@ -8,11 +8,7 @@ import AttachmentPicker from './Pickers/AttachmentPicker';
 
 const ModalSidebar = ({
     card,
-    showMembers, setShowMembers,
-    showLabels, setShowLabels,
-    showDatePicker, setShowDatePicker,
-    showCover, setShowCover,
-    isAddingChecklist, setIsAddingChecklist,
+    activePopover, setActivePopover,
     dbUsers, assignMember,
     dbLabels, assignLabel,
     addChecklist, newChecklistTitle, setNewChecklistTitle,
@@ -23,7 +19,6 @@ const ModalSidebar = ({
     isAssigningLabelLoading,
     isUpdatingDueDateLoading,
     isUpdatingCoverLoading,
-    showAttachment, setShowAttachment,
     addAttachment, isAddingAttachmentLoading
 }) => {
     const predefinedColors = ['#ef5350', '#ff9800', '#4caf50', '#2196f3', '#9c27b0'];
@@ -46,70 +41,72 @@ const ModalSidebar = ({
                 <div className="space-y-2 relative">
                     {/* Members Button - Hidden if members already exist on the card */}
                     {!(card.members?.length > 0) && (
-                        <>
-                            <button onClick={() => { setShowMembers(!showMembers); setShowLabels(false); setShowDatePicker(false); setIsAddingChecklist(false); setShowCover(false); setShowAttachment(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
+                        <div className="relative" data-popover="true">
+                            <button onClick={() => setActivePopover(activePopover === 'members' ? null : 'members')} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
                                 <FiUser size={16} /> Members
                             </button>
                             {/* Inline member picker */}
-                            {showMembers && (
+                            {activePopover === 'members' && (
                                 <MemberPicker
                                     dbUsers={dbUsers}
                                     assignMember={assignMember}
                                     isAssigningMemberLoading={isAssigningMemberLoading}
                                 />
                             )}
-                        </>
+                        </div>
                     )}
 
                     {/* Labels Button - Hidden if labels already exist on the card */}
                     {!(card.labels?.length > 0) && (
-                        <>
-                            <button onClick={() => { setShowLabels(!showLabels); setShowMembers(false); setShowDatePicker(false); setIsAddingChecklist(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
+                        <div className="relative" data-popover="true">
+                            <button onClick={() => setActivePopover(activePopover === 'labels' ? null : 'labels')} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
                                 <FiTag size={16} /> Labels
                             </button>
                             {/* Inline label picker */}
-                            {showLabels && (
+                            {activePopover === 'labels' && (
                                 <LabelPicker
                                     dbLabels={dbLabels}
                                     assignLabel={assignLabel}
                                     isAssigningLabelLoading={isAssigningLabelLoading}
                                 />
                             )}
-                        </>
+                        </div>
                     )}
 
                     {/* Checklists Button */}
-                    {isAddingChecklist ? (
-                        <form onSubmit={addChecklist} className="bg-white p-2 rounded shadow-md border absolute top-32 left-0 xl:right-full xl:left-auto xl:mr-2 w-48 z-20">
-                            <h4 className="text-xs font-semibold text-gray-500 mb-2 text-center border-b pb-2">Add Checklist</h4>
-                            <input
-                                autoFocus
-                                type="text"
-                                value={newChecklistTitle}
-                                onChange={(e) => setNewChecklistTitle(e.target.value)}
-                                className="w-full px-2 py-1 mb-2 rounded border-2 border-blue-500 focus:outline-none text-sm"
-                            />
-                            <button 
-                                type="submit" 
-                                disabled={isAddingChecklistLoading}
-                                className="bg-[#0c66e4] text-white w-full py-1 rounded text-sm font-medium flex justify-center items-center gap-2 disabled:opacity-50"
-                            >
-                                {isAddingChecklistLoading && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                                Add
+                    <div className="relative" data-popover="true">
+                        {activePopover === 'checklist' ? (
+                            <form onSubmit={(e) => { e.preventDefault(); addChecklist(); }} className="bg-white p-2 rounded shadow-md border absolute top-8 left-0 xl:right-full xl:left-auto xl:mr-2 w-48 z-20">
+                                <h4 className="text-xs font-semibold text-gray-500 mb-2 text-center border-b pb-2">Add Checklist</h4>
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={newChecklistTitle}
+                                    onChange={(e) => setNewChecklistTitle(e.target.value)}
+                                    className="w-full px-2 py-1 mb-2 rounded border-2 border-blue-500 focus:outline-none text-sm"
+                                />
+                                <button 
+                                    type="submit" 
+                                    disabled={isAddingChecklistLoading}
+                                    className="bg-[#0c66e4] text-white w-full py-1 rounded text-sm font-medium flex justify-center items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isAddingChecklistLoading && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                                    Add
+                                </button>
+                            </form>
+                        ) : (
+                            <button onClick={() => setActivePopover(activePopover === 'checklist' ? null : 'checklist')} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
+                                <FiCheckSquare size={16} /> Checklist
                             </button>
-                        </form>
-                    ) : (
-                        <button onClick={() => { setIsAddingChecklist(true); setShowLabels(false); setShowMembers(false); setShowDatePicker(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2">
-                            <FiCheckSquare size={16} /> Checklist
-                        </button>
-                    )}
+                        )}
+                    </div>
 
                     {/* Dates Button */}
-                    <div className="relative">
-                        <button onClick={() => { setShowDatePicker(!showDatePicker); setShowLabels(false); setShowMembers(false); setIsAddingChecklist(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
+                    <div className="relative" data-popover="true">
+                        <button onClick={() => setActivePopover(activePopover === 'datePicker' ? null : 'datePicker')} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
                             <FiClock size={16} /> Dates
                         </button>
-                        {showDatePicker && (
+                        {activePopover === 'datePicker' && (
                             <DatePicker
                                 dueDateInput={dueDateInput}
                                 setDueDateInput={setDueDateInput}
@@ -120,11 +117,11 @@ const ModalSidebar = ({
                     </div>
 
                     {/* Cover Button */}
-                    <div className="relative">
-                        <button onClick={() => { setShowCover(!showCover); setShowLabels(false); setShowMembers(false); setShowDatePicker(false); setIsAddingChecklist(false); setShowAttachment(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
+                    <div className="relative" data-popover="true">
+                        <button onClick={() => setActivePopover(activePopover === 'cover' ? null : 'cover')} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
                             <FiImage size={16} /> Cover
                         </button>
-                        {showCover && (
+                        {activePopover === 'cover' && (
                             <CoverPicker
                                 predefinedColors={predefinedColors}
                                 updateCover={updateCover}
@@ -136,11 +133,11 @@ const ModalSidebar = ({
                     </div>
 
                     {/* Attachment Button */}
-                    <div className="relative">
-                        <button onClick={() => { setShowAttachment(!showAttachment); setShowLabels(false); setShowMembers(false); setShowDatePicker(false); setIsAddingChecklist(false); setShowCover(false); }} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
+                    <div className="relative" data-popover="true">
+                        <button onClick={() => setActivePopover(activePopover === 'attachment' ? null : 'attachment')} className="w-full text-left px-3 py-1.5 bg-[#091e420f] hover:bg-[#091e4214] rounded-sm text-sm font-medium transition-colors flex items-center gap-2 mt-2">
                             <FiPaperclip size={16} /> Attachment
                         </button>
-                        {showAttachment && (
+                        {activePopover === 'attachment' && (
                             <AttachmentPicker
                                 handleAttach={handleAttach}
                                 attachNextUrl={attachNextUrl}

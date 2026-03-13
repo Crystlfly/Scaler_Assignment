@@ -24,7 +24,7 @@ const ModalActivity = ({ card, addComment, isAddingCommentLoading }) => {
                 {/* Add Comment Input */}
                 <div className="flex gap-3 mb-6">
                     <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                        Me
+                        DU
                     </div>
                     <form onSubmit={handleSubmit} className="flex-1">
                         <textarea

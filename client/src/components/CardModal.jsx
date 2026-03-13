@@ -33,9 +33,7 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
     const [isAddingItemLoading, setIsAddingItemLoading] = useState(false);
     const [togglingItemId, setTogglingItemId] = useState(null);
 
-    const [showMembers, setShowMembers] = useState(false);
-    const [showLabels, setShowLabels] = useState(false);
-    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [activePopover, setActivePopover] = useState(null);
     const [dueDateInput, setDueDateInput] = useState('');
 
     const [isAssigningMemberLoading, setIsAssigningMemberLoading] = useState(null);
@@ -44,10 +42,8 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
     const [isRemovingLabelLoading, setIsRemovingLabelLoading] = useState(null);
     const [isUpdatingDueDateLoading, setIsUpdatingDueDateLoading] = useState(false);
     
-    const [showCover, setShowCover] = useState(false);
     const [isUpdatingCoverLoading, setIsUpdatingCoverLoading] = useState(false);
 
-    const [showAttachment, setShowAttachment] = useState(false);
     const [isAddingAttachmentLoading, setIsAddingAttachmentLoading] = useState(false);
 
     const [isAddingCommentLoading, setIsAddingCommentLoading] = useState(false);
@@ -92,6 +88,16 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
             fetchUsersAndLabels();
         }
     }, [cardId, boardId]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (activePopover && !event.target.closest('[data-popover="true"]')) {
+                setActivePopover(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [activePopover]);
 
     const handleOverlayClick = (e) => {
         if (e.target === e.currentTarget) {
@@ -141,7 +147,7 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
             await axios.put(`${API_URL}/cards/${card.id}`, { dueDate: isoDate });
             await fetchCard();
             await refreshBoard();
-            setShowDatePicker(false);
+            setActivePopover(null);
         } catch (e) { alert("Failed to update due date."); }
         finally { setIsUpdatingDueDateLoading(false); }
     }
@@ -170,7 +176,7 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
         setIsAddingAttachmentLoading(true);
         try {
             await axios.post(`${API_URL}/cards/${card.id}/attachments`, { url, name });
-            setShowAttachment(false);
+            setActivePopover(null);
             await fetchCard();
             await refreshBoard();
         } catch (e) { alert("Failed to add attachment."); }
@@ -190,10 +196,10 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                 console.error("Failed to add checklist", err);
             } finally {
                 setIsAddingChecklistLoading(false);
-                setIsAddingChecklist(false);
+                setActivePopover(null);
             }
         } else {
-            setIsAddingChecklist(false);
+            setActivePopover(null);
         }
     }
 
@@ -359,13 +365,8 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                         removeMember={removeMember}
                         assignLabel={assignLabel}
                         removeLabel={removeLabel}
-                        showMembers={showMembers}
-                        setShowMembers={setShowMembers}
-                        showLabels={showLabels}
-                        setShowLabels={setShowLabels}
-                        showDatePicker={showDatePicker}
-                        setShowDatePicker={setShowDatePicker}
-                        setIsAddingChecklist={setIsAddingChecklist}
+                        activePopover={activePopover}
+                        setActivePopover={setActivePopover}
                         isAssigningMemberLoading={isAssigningMemberLoading}
                         isRemovingMemberLoading={isRemovingMemberLoading}
                         isAssigningLabelLoading={isAssigningLabelLoading}
@@ -413,12 +414,7 @@ const CardModal = ({ cardId, onClose, refreshBoard, listTitle, boardId }) => {
                 {/* Sidebar Actions */}
                     <ModalSidebar
                         card={card}
-                        showMembers={showMembers} setShowMembers={setShowMembers}
-                        showLabels={showLabels} setShowLabels={setShowLabels}
-                        showDatePicker={showDatePicker} setShowDatePicker={setShowDatePicker}
-                        showCover={showCover} setShowCover={setShowCover}
-                        showAttachment={showAttachment} setShowAttachment={setShowAttachment}
-                        isAddingChecklist={isAddingChecklist} setIsAddingChecklist={setIsAddingChecklist}
+                        activePopover={activePopover} setActivePopover={setActivePopover}
                         dbUsers={dbUsers} assignMember={assignMember}
                         dbLabels={dbLabels} assignLabel={assignLabel}
                         addChecklist={addChecklist} newChecklistTitle={newChecklistTitle} setNewChecklistTitle={setNewChecklistTitle}

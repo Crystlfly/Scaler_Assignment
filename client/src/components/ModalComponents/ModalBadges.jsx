@@ -6,16 +6,12 @@ const ModalBadges = ({
     dbUsers, dbLabels,
     assignMember, removeMember,
     assignLabel, removeLabel,
-    setShowDatePicker,
+    activePopover, setActivePopover,
     isAssigningMemberLoading,
     isRemovingMemberLoading,
     isAssigningLabelLoading,
     isRemovingLabelLoading
 }) => {
-    // Isolated states for badge dropdowns to prevent overlapping with ModalSidebar
-    const [showBadgeMembers, setShowBadgeMembers] = useState(false);
-    const [showBadgeLabels, setShowBadgeLabels] = useState(false);
-
     if (!card.labels?.length && !card.members?.length && !card.dueDate) {
         return null;
     }
@@ -24,10 +20,10 @@ const ModalBadges = ({
         <div className="flex flex-wrap gap-8 ml-10 mb-8">
             {/* Due Date Badge */}
             {card.dueDate && (
-                <div>
+                <div data-popover="true">
                     <h3 className="text-xs font-semibold text-[#5e6c84] mb-2">Due date</h3>
                     <div
-                        onClick={() => setShowDatePicker(true)}
+                        onClick={() => setActivePopover(activePopover === 'datePicker' ? null : 'datePicker')}
                         className="px-3 py-1.5 rounded-sm text-sm bg-gray-200 text-[#172b4d] font-medium cursor-pointer hover:bg-gray-300 transition-colors flex items-center gap-2"
                     >
                         <span>{new Date(card.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -40,7 +36,7 @@ const ModalBadges = ({
             {card.members?.length > 0 && (
                 <div>
                     <h3 className="text-xs font-semibold text-[#5e6c84] mb-2">Members</h3>
-                    <div className="flex gap-1 relative">
+                    <div className="flex gap-1 relative" data-popover="true">
                         {card.members.map(member => (
                             <div
                                 key={member.id}
@@ -56,11 +52,11 @@ const ModalBadges = ({
                                 )}
                             </div>
                         ))}
-                        <button onClick={() => { setShowBadgeMembers(!showBadgeMembers); setShowBadgeLabels(false); }} className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
+                        <button onClick={() => setActivePopover(activePopover === 'badgeMembers' ? null : 'badgeMembers')} className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
                             <FiPlus size={16} />
                         </button>
                         {/* Inline member picker */}
-                        {showBadgeMembers && (
+                        {activePopover === 'badgeMembers' && (
                             <div className="absolute top-10 left-0 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-10 text-sm">
                                 <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Members</div>
                                 {dbUsers.map(m => {
@@ -88,7 +84,7 @@ const ModalBadges = ({
             {card.labels?.length > 0 && (
                 <div>
                     <h3 className="text-xs font-semibold text-[#5e6c84] mb-2">Labels</h3>
-                    <div className="flex flex-wrap gap-1 relative">
+                    <div className="flex flex-wrap gap-1 relative" data-popover="true">
                         {card.labels.map(cardLabel => (
                             <div
                                 key={cardLabel.id}
@@ -105,11 +101,11 @@ const ModalBadges = ({
                                 )}
                             </div>
                         ))}
-                        <button onClick={() => { setShowBadgeLabels(!showBadgeLabels); setShowBadgeMembers(false); }} className="h-8 px-3 rounded-sm bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
+                        <button onClick={() => setActivePopover(activePopover === 'badgeLabels' ? null : 'badgeLabels')} className="h-8 px-3 rounded-sm bg-gray-200 text-gray-600 flex items-center justify-center hover:bg-gray-300">
                             <FiPlus size={16} />
                         </button>
                         {/* Inline label picker */}
-                        {showBadgeLabels && (
+                        {activePopover === 'badgeLabels' && (
                             <div className="absolute top-10 left-0 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-10 text-sm space-y-1 mt-1">
                                 <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Labels</div>
                                 {dbLabels.map(l => {
