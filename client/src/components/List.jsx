@@ -22,6 +22,8 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
   
   const [newCardTitle, setNewCardTitle] = React.useState('');
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  
+  const cardInputRef = React.useRef(null);
 
   const addCard = async (e) => {
     e?.preventDefault();
@@ -36,7 +38,10 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
       await axios.post(`${API_URL}/cards`, { title: newCardTitle, listId: list.id });
       await refreshBoard();
       setNewCardTitle('');
-      setIsAddingCard(false);
+      // Refocus the input smoothly for continuous creation
+      setTimeout(() => {
+        cardInputRef.current?.focus();
+      }, 0);
     } catch (error) {
       console.error("Failed to add card:", error);
     } finally {
@@ -213,6 +218,7 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
             setNewCardTitle={setNewCardTitle}
             addCard={addCard}
             isAddingCardLoading={isAddingCardLoading}
+            inputRef={cardInputRef}
           />
         </div>
       )}

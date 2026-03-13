@@ -7,13 +7,24 @@ const CreateCardForm = ({
     newCardTitle,
     setNewCardTitle,
     addCard,
-    isAddingCardLoading
+    isAddingCardLoading,
+    inputRef
 }) => {
     return (
         <div className="px-2 pb-2 mt-1 relative">
             {isAddingCard ? (
-                <div className="flex flex-col gap-2">
+                <div 
+                    className="flex flex-col gap-2"
+                    onBlur={(e) => {
+                        // If the new focus is not inside this form block, close it.
+                        if (!e.currentTarget.contains(e.relatedTarget)) {
+                            setIsAddingCard(false);
+                            setNewCardTitle('');
+                        }
+                    }}
+                >
                     <textarea
+                        ref={inputRef}
                         autoFocus
                         value={newCardTitle}
                         onChange={(e) => setNewCardTitle(e.target.value)}
