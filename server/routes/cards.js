@@ -65,10 +65,10 @@ router.put("/:id/reorder", async (req, res) => {
   }
 });
 
-// Update card (title, description, dueDate, cover)
+// Update card (title, description, dueDate, cover, isComplete)
 router.put("/:id", async (req, res) => {
   try {
-    const { title, description, dueDate, cover } = req.body;
+    const { title, description, dueDate, cover, isComplete } = req.body;
     const card = await prisma.card.update({
       where: { id: req.params.id },
       data: {
@@ -76,6 +76,7 @@ router.put("/:id", async (req, res) => {
         ...(description !== undefined && { description }),
         ...(dueDate !== undefined && { dueDate }),
         ...(cover !== undefined && { cover }),
+        ...(isComplete !== undefined && { isComplete }),
       },
       include: {
         labels: { include: { label: true } },

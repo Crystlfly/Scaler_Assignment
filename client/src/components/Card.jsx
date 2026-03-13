@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import axios from 'axios';
 import { BiRightArrowAlt } from 'react-icons/bi';
-import { FiClock, FiCheckSquare, FiTrash2 } from 'react-icons/fi';
-import { format } from 'date-fns';
+import { FiClock, FiCheckSquare, FiTrash2, FiCircle, FiCheckCircle } from 'react-icons/fi';
+import { format, isPast, differenceInHours } from 'date-fns';
 import CardModal from './CardModal';
 import ConfirmModal from './ModalComponents/ConfirmModal';
 
@@ -14,6 +14,7 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeletingLoading, setIsDeletingLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isTogglingComplete, setIsTogglingComplete] = useState(false);
 
   const deleteCard = (e) => {
     e.stopPropagation();
@@ -33,6 +34,21 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
     }
   };
 
+  const toggleComplete = async (e) => {
+    e.stopPropagation();
+    setIsTogglingComplete(true);
+    try {
+      await axios.put(`${API_URL}/cards/${card.id}`, {
+        isComplete: !card.isComplete
+      });
+      await refreshBoard();
+    } catch (error) {
+      console.error("Failed to toggle card completion:", error);
+    } finally {
+      setIsTogglingComplete(false);
+    }
+  };
+
   // Count checklist progress
   let totalChecklistItems = 0;
   let completedChecklistItems = 0;
@@ -45,6 +61,19 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
 
   const hasChecklist = totalChecklistItems > 0;
   const isChecklistComplete = hasChecklist && totalChecklistItems === completedChecklistItems;
+
+  const isOverdue = card.dueDate && isPast(new Date(card.dueDate)) && !card.isComplete;
+  const hoursUntilDue = card.dueDate ? differenceInHours(new Date(card.dueDate), new Date()) : null;
+  const isDueSoon = card.dueDate && !isOverdue && hoursUntilDue !== null && hoursUntilDue <= 24 && hoursUntilDue >= 0 && !card.isComplete;
+  
+  let dueDateBgClass = 'bg-[#ebecf0] text-[#5e6c84]';
+  if (card.isComplete) {
+    dueDateBgClass = 'bg-green-600 text-white';
+  } else if (isOverdue) {
+    dueDateBgClass = 'bg-red-600 text-white';
+  } else if (isDueSoon) {
+    dueDateBgClass = 'bg-yellow-500 text-white';
+  }
 
   return (
     <>
@@ -107,8 +136,29 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
               </div>
             )}
 
-            {/* Title */}
-            <div className="text-[14px] font-normal text-[#172b4d] pr-6 leading-5 break-words mb-1">{card.title}</div>
+            {/* Title with Hover to Complete Toggle */}
+            <div className="flex items-start gap-1.5 mb-1 pr-6 relative">
+              {/* Completion Icon */}
+              {(isHovering || card.isComplete || isTogglingComplete) && (
+                <div 
+                  onClick={toggleComplete}
+                  className="mt-[3px] shrink-0 cursor-pointer z-20 text-gray-400 hover:text-gray-700 transition-colors"
+                  title={card.isComplete ? "Mark as incomplete" : "Mark as complete"}
+                >
+                  {isTogglingComplete ? (
+                    <div className="w-[14px] h-[14px] border-[2px] border-current border-t-transparent rounded-full animate-spin"></div>
+                  ) : card.isComplete ? (
+                    <FiCheckCircle size={14} className="text-green-600" />
+                  ) : (
+                    <FiCircle size={14} />
+                  )}
+                </div>
+              )}
+              {/* Title Text */}
+              <div className="text-[14px] font-normal text-[#172b4d] leading-5 break-words">
+                {card.title}
+              </div>
+            </div>
 
             {/* Badges Footer */}
             {(card.dueDate || hasChecklist || (card.members && card.members.length > 0)) && (
@@ -117,8 +167,8 @@ const Card = ({ card, index, refreshBoard, listTitle, boardId }) => {
                 <div className="flex items-center gap-2">
                   {/* Due Date Indicator */}
                   {card.dueDate && (
-                    <div className="flex items-center gap-1 text-[12px] p-[2px] px-1.5 rounded bg-[#ebecf0] text-[#5e6c84]">
-                      <FiClock size={12} />
+                    <div className={`flex items-center gap-1 text-[12px] p-[2px] px-1.5 rounded z-20 ${dueDateBgClass}`}>
+                      {card.isComplete ? <FiCheckSquare size={12} /> : <FiClock size={12} />}
                       <span>{format(new Date(card.dueDate), 'MMM d')}</span>
                     </div>
                   )}

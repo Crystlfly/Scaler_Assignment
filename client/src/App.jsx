@@ -23,7 +23,7 @@ function App() {
   // Advanced Filter State
   const [filterLabels, setFilterLabels] = useState([]);
   const [filterMembers, setFilterMembers] = useState([]);
-  const [filterDueDate, setFilterDueDate] = useState(false);
+  const [filterDueDate, setFilterDueDate] = useState([]);
   const [dbUsers, setDbUsers] = useState([]);
 
   const [isAddingList, setIsAddingList] = useState(false);

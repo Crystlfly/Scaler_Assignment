@@ -6,6 +6,7 @@ import { FiMoreHorizontal } from 'react-icons/fi';
 import ConfirmModal from './ModalComponents/ConfirmModal';
 import ListOptionsMenu from './ListComponents/ListOptionsMenu';
 import CreateCardForm from './ListComponents/CreateCardForm';
+import { isPast, differenceInHours } from 'date-fns';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -101,9 +102,26 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
       if (!hasSelectedMember) return false;
     }
 
-    // 4. Due Date Filters (e.g., 'no_date', 'has_date' mock logic or next 24h depending on what user wants, for now we will just do has due date)
-    if (filterDueDate) {
+    // 4. Due Date Filters (Array: ['overdue', 'due_soon'])
+    if (filterDueDate && filterDueDate.length > 0) {
       if (!card.dueDate) return false;
+      
+      const isOverdue = isPast(new Date(card.dueDate)) && !card.isComplete;
+      const hoursUntilDue = differenceInHours(new Date(card.dueDate), new Date());
+      const isDueSoon = !isOverdue && hoursUntilDue <= 24 && hoursUntilDue >= 0 && !card.isComplete;
+      const isDueLater = !isOverdue && !isDueSoon && !card.isComplete;
+      
+      const wantsOverdue = filterDueDate.includes('overdue');
+      const wantsDueSoon = filterDueDate.includes('due_soon');
+      const wantsDueLater = filterDueDate.includes('due_later');
+      
+      // If they selected multiple, it should be an OR operation (e.g. show if it's overdue OR due soon)
+      let matchesDueDateFilters = false;
+      if (wantsOverdue && isOverdue) matchesDueDateFilters = true;
+      if (wantsDueSoon && isDueSoon) matchesDueDateFilters = true;
+      if (wantsDueLater && isDueLater) matchesDueDateFilters = true;
+      
+      if (!matchesDueDateFilters) return false;
     }
 
     return true;

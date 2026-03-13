@@ -85,10 +85,10 @@ const BoardHeader = ({
         {/* Filter button */}
         <button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isFilterOpen || filterLabels.length || filterMembers.length || filterDueDate ? 'bg-white/30 text-white' : 'bg-white/20 hover:bg-white/30 text-white'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors text-sm font-medium ${isFilterOpen || filterLabels.length || filterMembers.length || filterDueDate.length ? 'bg-white/30 text-white' : 'bg-white/20 hover:bg-white/30 text-white'}`}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-          Filter {((filterLabels.length + filterMembers.length + (filterDueDate ? 1 : 0)) > 0) && `(${(filterLabels.length + filterMembers.length + (filterDueDate ? 1 : 0))})`}
+          Filter {((filterLabels.length + filterMembers.length + filterDueDate.length) > 0) && `(${(filterLabels.length + filterMembers.length + filterDueDate.length)})`}
         </button>
 
         {/* Filter Dropdown */}
@@ -105,17 +105,47 @@ const BoardHeader = ({
               {/* Due Date Filter */}
               <div>
                 <h4 className="text-xs font-semibold text-[#5e6c84] mb-2 px-2 uppercase shadow-none tracking-wider">Due date</h4>
+                
+                {/* Overdue Checkbox */}
                 <div
-                  onClick={() => setFilterDueDate(!filterDueDate)}
+                  onClick={() => setFilterDueDate(prev => prev.includes('overdue') ? prev.filter(f => f !== 'overdue') : [...prev, 'overdue'])}
                   className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-gray-500">
+                    <div className="w-6 h-6 rounded bg-red-100 flex items-center justify-center text-red-600">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                     </div>
-                    <span className="text-sm">Has due date</span>
+                    <span className="text-sm">Overdue</span>
                   </div>
-                  {filterDueDate && <span className="text-blue-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
+                  {filterDueDate.includes('overdue') && <span className="text-blue-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
+                </div>
+
+                {/* Due Soon Checkbox */}
+                <div
+                  onClick={() => setFilterDueDate(prev => prev.includes('due_soon') ? prev.filter(f => f !== 'due_soon') : [...prev, 'due_soon'])}
+                  className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer mt-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-yellow-100 flex items-center justify-center text-yellow-600">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <span className="text-sm">Due in the next day</span>
+                  </div>
+                  {filterDueDate.includes('due_soon') && <span className="text-blue-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
+                </div>
+
+                {/* Later / Not Due Soon Checkbox */}
+                <div
+                  onClick={() => setFilterDueDate(prev => prev.includes('due_later') ? prev.filter(f => f !== 'due_later') : [...prev, 'due_later'])}
+                  className="flex items-center justify-between px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer mt-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-gray-600">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </div>
+                    <span className="text-sm">Later</span>
+                  </div>
+                  {filterDueDate.includes('due_later') && <span className="text-blue-600"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>}
                 </div>
               </div>
 
