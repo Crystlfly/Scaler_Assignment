@@ -6,13 +6,13 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const Board = ({ 
-  board, 
-  setBoard, 
+const Board = ({
+  board,
+  setBoard,
   fetchBoard,
-  searchQuery, 
-  filterLabels, 
-  filterMembers, 
+  searchQuery,
+  filterLabels,
+  filterMembers,
   filterDueDate,
   isAddingList,
   setIsAddingList,

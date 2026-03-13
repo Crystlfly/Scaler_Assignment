@@ -62,12 +62,19 @@ router.post("/", async (req, res) => {
 });
 
 // Update board title
+// Update board title and/or background
 router.put("/:id", async (req, res) => {
   try {
-    const { title } = req.body;
+    const { title, background } = req.body;
+
+    // Build an object with only the fields that were actually sent
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (background !== undefined) updateData.background = background;
+
     const board = await prisma.board.update({
       where: { id: req.params.id },
-      data: { title },
+      data: updateData,
     });
     res.json(board);
   } catch (error) {

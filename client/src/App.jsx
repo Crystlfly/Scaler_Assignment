@@ -145,7 +145,7 @@ function App() {
   const updateBoardBackground = async (color) => {
     // Optimistic Update
     setBoard(prev => ({ ...prev, background: color }));
-    setIsBackgroundMenuOpen(false);
+    // setIsBackgroundMenuOpen(false);
 
     try {
       await axios.put(`${API_URL}/boards/${board.id}`, { background: color });
@@ -204,7 +204,7 @@ function App() {
         dbUsers={dbUsers}
       />
 
-      <Board 
+      <Board
         board={board}
         setBoard={setBoard}
         fetchBoard={fetchBoard}
