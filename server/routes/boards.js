@@ -53,8 +53,8 @@ router.post("/", async (req, res) => {
   try {
     const { title, background } = req.body;
     const board = await prisma.board.create({
-      data: { 
-        title, 
+      data: {
+        title,
         background: background || "#0079bf",
         lists: {
           create: [

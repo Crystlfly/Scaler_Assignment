@@ -79,7 +79,7 @@ function App() {
   const handleCreateBoard = async (title) => {
     const tempId = "temp-" + Date.now();
     const tempBoard = { id: tempId, title, background: '#0079bf' };
-    
+
     // Optimistic Update
     setBoards(prev => [tempBoard, ...prev]);
     setBoard(tempBoard);
@@ -95,8 +95,8 @@ function App() {
       // Rollback
       setBoards(prev => prev.filter(b => b.id !== tempId));
       if (board?.id === tempId) {
-          setBoard(null);
-          localStorage.removeItem('activeBoardId');
+        setBoard(null);
+        localStorage.removeItem('activeBoardId');
       }
     }
   };
@@ -107,13 +107,13 @@ function App() {
 
     const tempId = "temp-" + Date.now();
     const newList = {
-        id: tempId,
-        title: newListTitle,
-        boardId: board.id,
-        cards: [],
-        order: board.lists && board.lists.length > 0 
-               ? board.lists[board.lists.length - 1].order + 1000 
-               : 1000
+      id: tempId,
+      title: newListTitle,
+      boardId: board.id,
+      cards: [],
+      order: board.lists && board.lists.length > 0
+        ? board.lists[board.lists.length - 1].order + 1000
+        : 1000
     };
 
     // Optimistic Update
@@ -130,15 +130,15 @@ function App() {
       });
       // Replace temp ID with real ID
       setBoard(prev => ({
-          ...prev,
-          lists: prev.lists.map(l => l.id === tempId ? { ...l, id: res.data.id } : l)
+        ...prev,
+        lists: prev.lists.map(l => l.id === tempId ? { ...l, id: res.data.id } : l)
       }));
     } catch (err) {
       console.error('Error adding list', err);
       // Rollback
       setBoard(prev => ({
-          ...prev,
-          lists: prev.lists.filter(l => l.id !== tempId)
+        ...prev,
+        lists: prev.lists.filter(l => l.id !== tempId)
       }));
     }
   };
@@ -147,13 +147,13 @@ function App() {
 
   const handleUpdateBoardTitle = async () => {
     if (!editBoardTitle.trim() || editBoardTitle === board.title) {
-        setIsEditingBoard(false);
-        setEditBoardTitle(board.title);
-        return;
+      setIsEditingBoard(false);
+      setEditBoardTitle(board.title);
+      return;
     }
 
     const previousTitle = board.title;
-    
+
     // Optimistic Update
     setBoard(prev => ({ ...prev, title: editBoardTitle }));
     setIsEditingBoard(false);
@@ -178,19 +178,19 @@ function App() {
     const deletedId = board.id;
     const previousBoards = [...boards];
     const newBoards = boards.filter(b => b.id !== deletedId);
-    
+
     // Optimistic Update
     setBoards(newBoards);
     setIsDeleteDialogOpen(false);
 
     let nextBoardId = null;
     if (newBoards.length > 0) {
-        nextBoardId = newBoards[0].id;
-        localStorage.setItem('activeBoardId', nextBoardId);
-        fetchBoardsAndActive(nextBoardId); // Fetch the new active board
+      nextBoardId = newBoards[0].id;
+      localStorage.setItem('activeBoardId', nextBoardId);
+      fetchBoardsAndActive(nextBoardId); // Fetch the new active board
     } else {
-        setBoard(null);
-        localStorage.removeItem('activeBoardId');
+      setBoard(null);
+      localStorage.removeItem('activeBoardId');
     }
 
     try {

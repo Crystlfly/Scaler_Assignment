@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { FiPlus, FiCheck } from 'react-icons/fi';
+import { isPast, differenceInHours } from 'date-fns';
 
 const ModalBadges = ({
     card,
@@ -16,6 +16,26 @@ const ModalBadges = ({
         return null;
     }
 
+    let dueDateBadgeClass = "bg-gray-200 text-gray-700 border border-gray-300";
+    let dueDateText = "DUE";
+
+    if (card.dueDate) {
+        const isOverdue = isPast(new Date(card.dueDate)) && !card.isComplete;
+        const hoursUntilDue = differenceInHours(new Date(card.dueDate), new Date());
+        const isDueSoon = !isOverdue && hoursUntilDue <= 24 && hoursUntilDue >= 0 && !card.isComplete;
+
+        if (card.isComplete) {
+            dueDateBadgeClass = "bg-green-600 text-white border border-green-700";
+            dueDateText = "COMPLETED";
+        } else if (isOverdue) {
+            dueDateBadgeClass = "bg-red-600 text-white border border-red-700";
+            dueDateText = "OVERDUE";
+        } else if (isDueSoon) {
+            dueDateBadgeClass = "bg-yellow-500 text-gray-900 border border-yellow-600";
+            dueDateText = "DUE SOON";
+        }
+    }
+
     return (
         <div className="flex flex-wrap gap-8 ml-10 mb-8">
             {/* Due Date Badge */}
@@ -27,7 +47,9 @@ const ModalBadges = ({
                         className="px-3 py-1.5 rounded-sm text-sm bg-gray-200 text-[#172b4d] font-medium cursor-pointer hover:bg-gray-300 transition-colors flex items-center gap-2"
                     >
                         <span>{new Date(card.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                        <span className="text-xs px-1 bg-white rounded uppercase text-gray-600 border shadow-sm">Due</span>
+                        <span className={`text-xs px-1 rounded uppercase shadow-sm ${dueDateBadgeClass}`}>
+                            {dueDateText}
+                        </span>
                     </div>
                 </div>
             )}
