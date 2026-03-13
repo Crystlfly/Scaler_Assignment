@@ -1,60 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import List from './List';
+import AddListForm from './AppComponents/AddListForm';
 import axios from 'axios';
-import { FiPlus } from 'react-icons/fi';
-import ConfirmModal from './ModalComponents/ConfirmModal';
-import { TfiTrello } from 'react-icons/tfi';
 
 const API_URL = 'http://localhost:5000/api';
 
-const Board = ({ fetchBoardsAndActive }) => {
-  const [board, setBoard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isAddingList, setIsAddingList] = React.useState(false);
-  const [newListTitle, setNewListTitle] = React.useState('');
-  
-  const [isEditingBoard, setIsEditingBoard] = React.useState(false);
-  const [editBoardTitle, setEditBoardTitle] = useState('');
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
-  const [isDeletingBoardLoading, setIsDeletingBoardLoading] = React.useState(false);
-
-  useEffect(() => {
-    const fetchBoard = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`${API_URL}/boards`);
-        let activeBoard = res.data[0];
-
-        if (!activeBoard) {
-            console.error("No boards found. Please run the seed script.");
-            setLoading(false);
-            return;
-        }
-
-        const boardRes = await axios.get(`${API_URL}/boards/${activeBoard.id}`);
-        setBoard(boardRes.data);
-      } catch (error) {
-        console.error("Error fetching board:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBoard();
-  }, []);
-
-  const calculateNewOrder = (items, destIndex) => {
-    if (items.length === 0) return 1000;
-    if (destIndex === 0) return items[0].order - 1000;
-    if (destIndex === items.length) return items[items.length - 1].order + 1000;
-    const prevOrder = items[destIndex - 1].order;
-    const nextOrder = items[destIndex].order;
-    return (prevOrder + nextOrder) / 2;
-  };
+const Board = ({ 
+  board, 
+  setBoard, 
+  fetchBoard,
+  searchQuery, 
+  filterLabels, 
+  filterMembers, 
+  filterDueDate,
+  isAddingList,
+  setIsAddingList,
+  newListTitle,
+  setNewListTitle,
+  isAddingListLoading,
+  handleAddList,
+  listInputRef
+}) => {
 
   const onDragEnd = async (result) => {
-    const { destination, source, draggableId, type } = result;
+    const { destination, source, type } = result;
 
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
@@ -62,16 +32,25 @@ const Board = ({ fetchBoardsAndActive }) => {
     if (type === 'list') {
       const newLists = Array.from(board.lists);
       const [movedList] = newLists.splice(source.index, 1);
-      const newOrder = calculateNewOrder(newLists, destination.index);
-      movedList.order = newOrder;
       newLists.splice(destination.index, 0, movedList);
-      
+
+      let newOrder = 1000;
+      if (destination.index === 0) {
+        newOrder = newLists.length > 1 ? newLists[1].order / 2 : 1000;
+      } else if (destination.index === newLists.length - 1) {
+        newOrder = newLists[newLists.length - 2].order + 1000;
+      } else {
+        newOrder = (newLists[destination.index - 1].order + newLists[destination.index + 1].order) / 2;
+      }
+
+      movedList.order = newOrder;
       setBoard(prev => ({ ...prev, lists: newLists }));
-      
+
       try {
-        await axios.put(`${API_URL}/lists/${draggableId}/reorder`, { order: newOrder });
-      } catch (error) {
-        console.error("Failed to reorder list:", error);
+        await axios.put(`${API_URL}/lists/${movedList.id}/reorder`, { order: newOrder });
+      } catch (err) {
+        console.error("Failed to reorder list", err);
+        fetchBoard();
       }
       return;
     }
@@ -83,204 +62,83 @@ const Board = ({ fetchBoardsAndActive }) => {
       const sourceList = board.lists[sourceListIndex];
       const destList = board.lists[destListIndex];
 
-      const sourceCards = Array.from(sourceList.cards || []);
-      const destCards = source.droppableId === destination.droppableId ? sourceCards : Array.from(destList.cards || []);
+      const sourceCards = Array.from(sourceList.cards);
+      const destCards = source.droppableId === destination.droppableId ? sourceCards : Array.from(destList.cards);
 
       const [movedCard] = sourceCards.splice(source.index, 1);
-      const newOrder = calculateNewOrder(destCards, destination.index);
-      movedCard.order = newOrder;
       movedCard.listId = destination.droppableId;
-      
+
       destCards.splice(destination.index, 0, movedCard);
+
+      let newOrder = 1000;
+      if (destination.index === 0) {
+        newOrder = destCards.length > 1 ? destCards[1].order / 2 : 1000;
+      } else if (destination.index === destCards.length - 1) {
+        newOrder = destCards[destCards.length - 2].order + 1000;
+      } else {
+        newOrder = (destCards[destination.index - 1].order + destCards[destination.index + 1].order) / 2;
+      }
+
+      movedCard.order = newOrder;
 
       const newLists = Array.from(board.lists);
       newLists[sourceListIndex] = { ...sourceList, cards: sourceCards };
-      newLists[destListIndex] = { ...destList, cards: destCards };
+      if (source.droppableId !== destination.droppableId) {
+        newLists[destListIndex] = { ...destList, cards: destCards };
+      }
 
       setBoard(prev => ({ ...prev, lists: newLists }));
 
       try {
-        await axios.put(`${API_URL}/cards/${draggableId}/reorder`, { 
-          order: newOrder, 
-          listId: destination.droppableId 
+        await axios.put(`${API_URL}/cards/${movedCard.id}/reorder`, {
+          listId: destination.droppableId,
+          order: newOrder
         });
-      } catch (error) {
-        console.error("Failed to reorder card:", error);
+      } catch (err) {
+        console.error("Failed to reorder card", err);
+        fetchBoard();
       }
       return;
     }
   };
 
-  const addList = async (e) => {
-    e?.preventDefault();
-    if (!newListTitle.trim()) {
-        setIsAddingList(false);
-        return;
-    }
-
-    try {
-      await axios.post(`${API_URL}/lists`, { title: newListTitle, boardId: board.id });
-      setNewListTitle('');
-      setIsAddingList(false);
-      refreshBoard();
-    } catch (error) {
-      console.error("Failed to add list:", error);
-    }
-  };
-
-  const refreshBoard = async () => {
-     if(board) {
-        const boardRes = await axios.get(`${API_URL}/boards/${board.id}`);
-        setBoard(boardRes.data);
-     }
-  }
-
-  const handleUpdateBoardTitle = async () => {
-    setIsEditingBoard(false);
-    if (editBoardTitle.trim() && editBoardTitle !== board.title) {
-        try {
-            await axios.put(`${API_URL}/boards/${board.id}`, { title: editBoardTitle });
-            setBoard(prev => ({ ...prev, title: editBoardTitle }));
-            if (fetchBoardsAndActive) fetchBoardsAndActive(board.id);
-        } catch (error) {
-            console.error("Failed to update board:", error);
-        }
-    } else {
-        setEditBoardTitle(board.title);
-    }
-  };
-
-  const handleDeleteBoard = () => {
-    setIsDeleteModalOpen(true);
-  };
-
-  const confirmDeleteBoard = async () => {
-    setIsDeletingBoardLoading(true);
-    try {
-        await axios.delete(`${API_URL}/boards/${board.id}`);
-        localStorage.removeItem('activeBoardId');
-        if (fetchBoardsAndActive) fetchBoardsAndActive();
-    } catch (error) {
-         console.error("Failed to delete board:", error);
-    } finally {
-        setIsDeletingBoardLoading(false);
-        setIsDeleteModalOpen(false);
-    }
-  };
-
-  if (loading) return <div className="h-screen flex items-center justify-center bg-[#0079bf]">Loading Board...</div>;
-  if (!board) return <div className="h-screen flex items-center justify-center bg-[#0079bf]">No board found.</div>;
-
   return (
-    <div 
-      className="h-screen w-full flex flex-col font-[Inter,-apple-system,sans-serif]" 
-      style={{ backgroundColor: board.background }}
-    >
-      {/* Top Navbar mimic */}
-      <div className="h-[auto] min-h-[48px] border-b border-[#ffffff29] bg-[#00000029] flex flex-wrap gap-y-2 items-center px-4 py-2 justify-between shrink-0">
-         <div className="flex items-center gap-2 text-white font-bold text-lg cursor-pointer hover:bg-[#ffffff29] px-2 py-1 rounded transition-colors">
-            <TfiTrello size={20} />
-            <span>Trello Clone</span>
-         </div>
-         <div className="bg-[#ffffff29] hover:bg-[#ffffff3d] text-white text-sm px-3 py-1.5 rounded-full font-medium cursor-pointer transition-colors backdrop-blur-sm">
-             DU
-         </div>
-      </div>
-
-      {/* Board Header */}
-      <div className="px-4 py-3 flex flex-col md:flex-row items-start md:items-center shrink-0 justify-between gap-3">
-         {/* Edit Board Title block */}
-         {isEditingBoard ? (
-            <input 
-               autoFocus
-               type="text"
-               value={editBoardTitle}
-               onChange={(e) => setEditBoardTitle(e.target.value)}
-               onBlur={handleUpdateBoardTitle}
-               onKeyDown={(e) => e.key === 'Enter' && handleUpdateBoardTitle()}
-               className="text-[18px] font-bold text-[#172b4d] px-3 py-1.5 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-            />
-         ) : (
-            <h1 
-               onClick={() => {
-                   setEditBoardTitle(board.title);
-                   setIsEditingBoard(true);
-               }}
-               className="text-[18px] font-bold text-white bg-[#ffffff29] px-3 py-1.5 rounded cursor-pointer hover:bg-[#ffffff3d] backdrop-blur-sm transition-colors"
-            >
-              {board.title}
-            </h1>
-         )}
-
-         {/* Delete Board Button */}
-         <div className="w-full md:w-auto">
-             <button 
-                 onClick={handleDeleteBoard}
-                 className="bg-[#ffffff29] hover:bg-red-500/80 text-white px-3 py-1.5 rounded transition-colors text-sm font-medium backdrop-blur-sm shadow-sm"
-             >
-                 Delete Board
-             </button>
-         </div>
-      </div>
-
+    <div className="flex-1 overflow-x-auto overflow-y-auto px-4 md:px-6 pb-4">
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="board" direction="horizontal" type="list">
+        <Droppable droppableId="board" type="list" direction="horizontal">
           {(provided) => (
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className="flex-1 overflow-x-auto overflow-y-auto px-4 md:px-6 pb-4 flex flex-col md:flex-row items-center md:items-start h-full space-y-4 md:space-y-0 w-full"
+              className="flex flex-col md:flex-row items-center md:items-start h-full space-y-4 md:space-y-0 md:space-x-3 w-full"
             >
-              {board.lists?.map((list, index) => (
-                <List key={list.id} list={list} index={index} refreshBoard={refreshBoard} />
+              {board?.lists?.map((list, index) => (
+                <List
+                  key={list.id}
+                  list={list}
+                  index={index}
+                  refreshBoard={fetchBoard}
+                  searchQuery={searchQuery}
+                  filterLabels={filterLabels}
+                  filterMembers={filterMembers}
+                  filterDueDate={filterDueDate}
+                />
               ))}
               {provided.placeholder}
-              
-              {/* Add List Form/Button */}
-              {isAddingList ? (
-                  <form 
-                    onSubmit={addList}
-                    className="bg-[#f1f2f4] rounded-xl w-full sm:w-[300px] shrink-0 p-3 shadow-sm flex flex-col gap-2 relative h-fit"
-                  >
-                     <input 
-                        autoFocus
-                        type="text"
-                        value={newListTitle}
-                        onChange={(e) => setNewListTitle(e.target.value)}
-                        placeholder="Enter list title..."
-                        className="w-full px-3 py-1.5 rounded-sm border-2 border-transparent focus:border-blue-500 focus:outline-none text-sm text-[#172b4d]"
-                     />
-                     <div className="flex items-center gap-2">
-                         <button type="submit" className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors">
-                             Add list
-                         </button>
-                         <button type="button" onClick={() => {setIsAddingList(false); setNewListTitle('');}} className="p-1.5 text-gray-500 hover:text-gray-800 transition-colors">
-                             ✕
-                         </button>
-                     </div>
-                  </form>
-              ) : (
-                  <button 
-                    onClick={() => setIsAddingList(true)}
-                    className="bg-[#ffffff3d] hover:bg-[#ffffff29] transition-colors rounded-xl w-full sm:w-[300px] shrink-0 p-3 text-white shadow-sm font-medium text-[14px] flex items-center gap-1 text-left h-fit"
-                  >
-                    <FiPlus size={18} /> Add another list
-                  </button>
-              )}
+
+              <AddListForm
+                isAddingList={isAddingList}
+                setIsAddingList={setIsAddingList}
+                newListTitle={newListTitle}
+                setNewListTitle={setNewListTitle}
+                isAddingListLoading={isAddingListLoading}
+                handleAddList={handleAddList}
+                listInputRef={listInputRef}
+              />
             </div>
           )}
         </Droppable>
       </DragDropContext>
-
-      <ConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={confirmDeleteBoard}
-        title="Delete Board"
-        message={`Are you sure you want to completely delete the board "${board.title}"? This action cannot be undone.`}
-        confirmText="Delete Board"
-        isLoading={isDeletingBoardLoading}
-      />
     </div>
   );
 };

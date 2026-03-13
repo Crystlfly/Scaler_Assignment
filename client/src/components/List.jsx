@@ -2,8 +2,10 @@ import React from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import Card from './Card';
 import axios from 'axios';
-import { FiMoreHorizontal, FiPlus } from 'react-icons/fi';
+import { FiMoreHorizontal } from 'react-icons/fi';
 import ConfirmModal from './ModalComponents/ConfirmModal';
+import ListOptionsMenu from './ListComponents/ListOptionsMenu';
+import CreateCardForm from './ListComponents/CreateCardForm';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -160,25 +162,12 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
             </button>
 
             {/* Actions Popover Menu */}
-            {isMenuOpen && (
-              <div className="absolute top-10 right-2 w-72 bg-white rounded-lg shadow-xl shadow-black/20 border border-gray-200 z-50 text-sm font-normal py-2 text-[#172b4d]">
-                <div className="flex items-center justify-between px-4 pb-2 border-b border-gray-200 mb-2">
-                  <span className="font-semibold text-gray-500 flex-1 text-center text-xs">List actions</span>
-                  <button onClick={() => setIsMenuOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
-                    ✕
-                  </button>
-                </div>
-                <div className="px-2">
-                  <button onClick={() => { setIsAddingCard(true); setIsMenuOpen(false); }} className="w-full text-left px-2 py-1.5 hover:bg-[#A6CCD2] rounded transition-colors bg-[#ebecf0]">
-                    Add card...
-                  </button>
-                  <div className="border-t border-gray-200 my-2"></div>
-                  <button onClick={deleteList} className="w-full text-left px-2 py-1.5 hover:bg-red-50 text-red-600 rounded transition-colors">
-                    Delete list
-                  </button>
-                </div>
-              </div>
-            )}
+            <ListOptionsMenu
+              isMenuOpen={isMenuOpen}
+              setIsMenuOpen={setIsMenuOpen}
+              setIsAddingCard={setIsAddingCard}
+              deleteList={deleteList}
+            />
           </div>
 
           {/* List Cards Container */}
@@ -199,53 +188,14 @@ const List = ({ list, index, refreshBoard, searchQuery = '', filterLabels = [], 
           </Droppable>
 
           {/* Add a Card Form/Button */}
-          <div className="px-2 pb-2 mt-1 relative">
-            {isAddingCard ? (
-              <div className="flex flex-col gap-2">
-                <textarea
-                  autoFocus
-                  value={newCardTitle}
-                  onChange={(e) => setNewCardTitle(e.target.value)}
-                  placeholder="Enter a title for this card..."
-                  className="w-full p-2 text-sm rounded-lg border-none shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-[#172b4d]"
-                  rows={2}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      addCard();
-                    }
-                  }}
-                />
-                <div className="flex items-center space-x-2 w-full">
-                <button 
-                  type="submit" 
-                  disabled={isAddingCardLoading}
-                  onMouseDown={(e) => { e.preventDefault(); addCard(); }}
-                  className="bg-[#0c66e4] hover:bg-[#0055cc] text-white px-3 py-1.5 rounded-sm text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isAddingCardLoading ? (
-                     <>
-                       <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                       Adding...
-                     </>
-                  ) : 'Add card'}
-                </button>
-                <button
-                  type="button" onMouseDown={() => { setIsAddingCard(false); setNewCardTitle(''); }} className="p-1.5 text-gray-500 hover:text-gray-800 transition-colors">
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAddingCard(true)}
-                className="w-full text-left text-[14px] font-medium text-[#44546f] hover:bg-[#091e4214] hover:text-[#172b4d] px-2 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <FiPlus size={16} /> Add a card
-              </button>
-            )}
-          </div>
+          <CreateCardForm
+            isAddingCard={isAddingCard}
+            setIsAddingCard={setIsAddingCard}
+            newCardTitle={newCardTitle}
+            setNewCardTitle={setNewCardTitle}
+            addCard={addCard}
+            isAddingCardLoading={isAddingCardLoading}
+          />
         </div>
       )}
     </Draggable>

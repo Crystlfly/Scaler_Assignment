@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { FiUser, FiTag, FiCheckSquare, FiClock, FiPlus, FiImage, FiPaperclip } from 'react-icons/fi';
+import MemberPicker from './Pickers/MemberPicker';
+import LabelPicker from './Pickers/LabelPicker';
+import DatePicker from './Pickers/DatePicker';
+import CoverPicker from './Pickers/CoverPicker';
+import AttachmentPicker from './Pickers/AttachmentPicker';
 
 const ModalSidebar = ({
     card,
@@ -47,17 +52,11 @@ const ModalSidebar = ({
                             </button>
                             {/* Inline member picker */}
                             {showMembers && (
-                                <div className="absolute top-8 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-20 text-sm">
-                                    <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Members</div>
-                                    {dbUsers.map(m => (
-                                        <div key={m.id} onClick={() => isAssigningMemberLoading !== m.id && assignMember(m.id)} className={`flex items-center gap-2 p-1.5 rounded cursor-pointer ${isAssigningMemberLoading === m.id ? 'opacity-50' : 'hover:bg-gray-100'}`}>
-                                            <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                                                {isAssigningMemberLoading === m.id ? <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : m.name.charAt(0)}
-                                            </div>
-                                            <span>{m.name}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                <MemberPicker
+                                    dbUsers={dbUsers}
+                                    assignMember={assignMember}
+                                    isAssigningMemberLoading={isAssigningMemberLoading}
+                                />
                             )}
                         </>
                     )}
@@ -70,15 +69,11 @@ const ModalSidebar = ({
                             </button>
                             {/* Inline label picker */}
                             {showLabels && (
-                                <div className="absolute top-16 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-2 w-48 z-20 text-sm space-y-1 mt-1">
-                                    <div className="font-semibold text-xs text-gray-500 mb-2 px-1">Board Labels</div>
-                                    {dbLabels.map(l => (
-                                        <div key={l.id} onClick={() => isAssigningLabelLoading !== l.id && assignLabel(l.id)} className={`px-2 py-1.5 rounded flex items-center justify-between text-white font-medium cursor-pointer ${isAssigningLabelLoading === l.id ? 'opacity-70' : ''}`} style={{ backgroundColor: l.color }}>
-                                            {l.title} 
-                                            {isAssigningLabelLoading === l.id ? <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> : <FiPlus size={14} />}
-                                        </div>
-                                    ))}
-                                </div>
+                                <LabelPicker
+                                    dbLabels={dbLabels}
+                                    assignLabel={assignLabel}
+                                    isAssigningLabelLoading={isAssigningLabelLoading}
+                                />
                             )}
                         </>
                     )}
@@ -115,34 +110,12 @@ const ModalSidebar = ({
                             <FiClock size={16} /> Dates
                         </button>
                         {showDatePicker && (
-                            <div className="absolute top-10 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-3 w-64 z-20">
-                                <h4 className="text-xs font-semibold text-gray-500 mb-3 text-center border-b pb-2">Dates</h4>
-                                <label className="block text-xs font-bold text-[#5e6c84] mb-1">Due date</label>
-                                <input
-                                    type="date"
-                                    value={dueDateInput}
-                                    onChange={(e) => setDueDateInput(e.target.value)}
-                                    className="w-full px-2 py-1.5 mb-3 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-sm"
-                                />
-                                <div className="flex flex-col gap-2">
-                                    <button 
-                                        onClick={() => updateDueDate(dueDateInput ? `${dueDateInput}T12:00:00Z` : null)} 
-                                        disabled={isUpdatingDueDateLoading}
-                                        className="flex items-center justify-center gap-2 bg-[#0c66e4] text-white hover:bg-[#0055cc] w-full py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
-                                    >
-                                        {isUpdatingDueDateLoading && dueDateInput && <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />}
-                                        Save
-                                    </button>
-                                    <button 
-                                        onClick={() => updateDueDate(null)} 
-                                        disabled={isUpdatingDueDateLoading}
-                                        className="flex items-center justify-center gap-2 w-full py-1.5 rounded text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
-                                    >
-                                        {isUpdatingDueDateLoading && !dueDateInput && <div className="w-3 h-3 border-2 border-gray-500 border-t-gray-800 rounded-full animate-spin" />}
-                                        Remove
-                                    </button>
-                                </div>
-                            </div>
+                            <DatePicker
+                                dueDateInput={dueDateInput}
+                                setDueDateInput={setDueDateInput}
+                                updateDueDate={updateDueDate}
+                                isUpdatingDueDateLoading={isUpdatingDueDateLoading}
+                            />
                         )}
                     </div>
 
@@ -152,47 +125,13 @@ const ModalSidebar = ({
                             <FiImage size={16} /> Cover
                         </button>
                         {showCover && (
-                            <div className="absolute top-10 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-3 w-64 z-20">
-                                <h4 className="text-xs font-semibold text-gray-500 mb-3 text-center border-b pb-2">Cover</h4>
-                                
-                                <label className="block text-xs font-bold text-[#5e6c84] mb-1">Colors</label>
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {predefinedColors.map(color => (
-                                        <button 
-                                            key={color}
-                                            onClick={() => updateCover(color)}
-                                            disabled={isUpdatingCoverLoading}
-                                            className="w-10 h-8 rounded shrink-0 hover:opacity-80 transition-opacity disabled:opacity-50"
-                                            style={{ backgroundColor: color }}
-                                        />
-                                    ))}
-                                </div>
-
-                                <label className="block text-xs font-bold text-[#5e6c84] mb-1">Image URL</label>
-                                <input
-                                    type="text"
-                                    placeholder="https://..."
-                                    value={coverUrlInput}
-                                    onChange={(e) => setCoverUrlInput(e.target.value)}
-                                    className="w-full px-2 py-1.5 mb-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-sm"
-                                    disabled={isUpdatingCoverLoading}
-                                />
-                                <button 
-                                    onClick={() => coverUrlInput.trim() && updateCover(coverUrlInput.trim())}
-                                    disabled={isUpdatingCoverLoading || !coverUrlInput.trim()}
-                                    className="w-full bg-[#0c66e4] hover:bg-[#0055cc] text-white py-1.5 rounded text-sm font-medium transition-colors mb-3 disabled:opacity-50"
-                                >
-                                    Apply Image
-                                </button>
-
-                                <button 
-                                    onClick={() => updateCover(null)}
-                                    disabled={isUpdatingCoverLoading}
-                                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
-                                >
-                                    Remove Cover
-                                </button>
-                            </div>
+                            <CoverPicker
+                                predefinedColors={predefinedColors}
+                                updateCover={updateCover}
+                                isUpdatingCoverLoading={isUpdatingCoverLoading}
+                                coverUrlInput={coverUrlInput}
+                                setCoverUrlInput={setCoverUrlInput}
+                            />
                         )}
                     </div>
 
@@ -202,43 +141,14 @@ const ModalSidebar = ({
                             <FiPaperclip size={16} /> Attachment
                         </button>
                         {showAttachment && (
-                            <form onSubmit={handleAttach} className="absolute top-10 left-0 xl:right-full xl:left-auto xl:mr-2 bg-white shadow-xl border border-gray-200 rounded-lg p-3 w-64 z-20">
-                                <h4 className="text-xs font-semibold text-gray-500 mb-3 text-center border-b pb-2">Attach a link</h4>
-                                
-                                <label className="block text-xs font-bold text-[#5e6c84] mb-1">Search or paste a link</label>
-                                <input
-                                    autoFocus
-                                    type="url"
-                                    placeholder="Find recent links or paste a new link"
-                                    value={attachNextUrl}
-                                    onChange={(e) => setAttachNextUrl(e.target.value)}
-                                    className="w-full px-2 py-1.5 mb-2 rounded border-2 border-blue-500 focus:outline-none text-sm bg-gray-50"
-                                    disabled={isAddingAttachmentLoading}
-                                />
-                                
-                                {attachNextUrl && (
-                                    <>
-                                        <label className="block text-xs font-bold text-[#5e6c84] mb-1 mt-2">Display text</label>
-                                        <input
-                                            type="text"
-                                            placeholder="Text to display"
-                                            value={attachNextName}
-                                            onChange={(e) => setAttachNextName(e.target.value)}
-                                            className="w-full px-2 py-1.5 mb-3 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-sm"
-                                            disabled={isAddingAttachmentLoading}
-                                        />
-                                    </>
-                                )}
-
-                                <button 
-                                    type="submit"
-                                    disabled={isAddingAttachmentLoading || !attachNextUrl.trim()}
-                                    className="w-full mt-2 bg-[#0c66e4] hover:bg-[#0055cc] text-white py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {isAddingAttachmentLoading && <div className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>}
-                                    Insert
-                                </button>
-                            </form>
+                            <AttachmentPicker
+                                handleAttach={handleAttach}
+                                attachNextUrl={attachNextUrl}
+                                setAttachNextUrl={setAttachNextUrl}
+                                attachNextName={attachNextName}
+                                setAttachNextName={setAttachNextName}
+                                isAddingAttachmentLoading={isAddingAttachmentLoading}
+                            />
                         )}
                     </div>
 
