@@ -42,27 +42,39 @@ const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, update
         </div>
 
         {/* Boards Dropdown */}
-        <div className="relative group">
-          <button className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition-colors text-sm font-medium">
+        <div className="relative">
+          <button 
+            onClick={() => setActivePopover(activePopover === 'boards' ? null : 'boards')}
+            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition-colors text-sm font-medium"
+          >
             Boards <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </button>
-          <div className="absolute top-full left-0 pt-1 w-64 hidden group-hover:block z-50">
-            <div className="bg-white rounded shadow-xl text-[#172b4d] overflow-hidden">
-              <div className="p-2 border-b text-xs font-semibold text-gray-500">Your Boards</div>
-              <div className="max-h-64 overflow-y-auto pt-1 pb-1">
-                {boards.map(b => (
-                  <div key={b.id} onClick={() => fetchBoardsAndActive(b.id)} className={`px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm flex items-center gap-2 ${board?.id === b.id ? 'bg-blue-50 font-medium' : ''}`}>
-                    <div className="w-6 h-4 rounded-sm shadow-sm" style={
-                      b.background?.includes('url(') 
-                        ? { backgroundImage: b.background, backgroundSize: 'cover', backgroundPosition: 'center' } 
-                        : { backgroundColor: b.background }
-                    }></div>
-                    {b.title}
-                  </div>
-                ))}
+          {activePopover === 'boards' && (
+            <div className="absolute top-full left-0 pt-1 w-64 z-50">
+              <div className="bg-white rounded shadow-xl text-[#172b4d] overflow-hidden">
+                <div className="p-2 border-b text-xs font-semibold text-gray-500">Your Boards</div>
+                <div className="max-h-64 overflow-y-auto pt-1 pb-1">
+                  {boards.map(b => (
+                    <div 
+                      key={b.id} 
+                      onClick={() => {
+                        fetchBoardsAndActive(b.id);
+                        setActivePopover(null);
+                      }} 
+                      className={`px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm flex items-center gap-2 ${board?.id === b.id ? 'bg-blue-50 font-medium' : ''}`}
+                    >
+                      <div className="w-6 h-4 rounded-sm shadow-sm" style={
+                        b.background?.includes('url(') 
+                          ? { backgroundImage: b.background, backgroundSize: 'cover', backgroundPosition: 'center' } 
+                          : { backgroundColor: b.background }
+                      }></div>
+                      {b.title}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Background Dropdown */}
