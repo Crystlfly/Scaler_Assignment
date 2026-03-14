@@ -1,24 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MdAdd, MdClose } from 'react-icons/md';
 
 const BACKGROUND_COLORS = ['#0079bf', '#519839', '#b04632', '#89609e', '#d29034', '#838c91'];
 
 const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, updateBoardBackground }) => {
-  const [isBackgroundMenuOpen, setIsBackgroundMenuOpen] = useState(false);
-  const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+  const [activePopover, setActivePopover] = useState(null);
   const [newBoardTitle, setNewBoardTitle] = useState('');
+  const [bgImageUrl, setBgImageUrl] = useState('');
+  
+  const navRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (navRef.current && !navRef.current.contains(event.target)) {
+        setActivePopover(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const onSubmitCreate = (e) => {
     e.preventDefault();
     if (newBoardTitle.trim()) {
       handleCreateBoard(newBoardTitle.trim());
       setNewBoardTitle('');
-      setIsCreatingBoard(false);
+      setActivePopover(null);
     }
   };
 
   return (
-    <nav className="bg-black/20 text-white flex items-center px-4 py-2 border-b border-black/10 shrink-0 w-full">
+    <nav ref={navRef} className="bg-black/20 text-white flex items-center px-4 py-2 border-b border-black/10 shrink-0 w-full">
       <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
         <div className="font-bold text-xl drop-shadow-sm tracking-wider flex items-center cursor-pointer mr-0 sm:mr-2">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="mr-2">
@@ -38,7 +52,11 @@ const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, update
               <div className="max-h-64 overflow-y-auto pt-1 pb-1">
                 {boards.map(b => (
                   <div key={b.id} onClick={() => fetchBoardsAndActive(b.id)} className={`px-3 py-2 cursor-pointer hover:bg-gray-100 text-sm flex items-center gap-2 ${board?.id === b.id ? 'bg-blue-50 font-medium' : ''}`}>
-                    <div className="w-6 h-4 rounded-sm shadow-sm" style={{ backgroundColor: b.background }}></div>
+                    <div className="w-6 h-4 rounded-sm shadow-sm" style={
+                      b.background?.includes('url(') 
+                        ? { backgroundImage: b.background, backgroundSize: 'cover', backgroundPosition: 'center' } 
+                        : { backgroundColor: b.background }
+                    }></div>
                     {b.title}
                   </div>
                 ))}
@@ -50,14 +68,14 @@ const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, update
         {/* Background Dropdown */}
         {board && (
           <div className="relative">
-            <button onClick={() => setIsBackgroundMenuOpen(!isBackgroundMenuOpen)} className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition-colors text-sm font-medium">
+            <button onClick={() => setActivePopover(activePopover === 'background' ? null : 'background')} className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded transition-colors text-sm font-medium">
               Background
             </button>
-            {isBackgroundMenuOpen && (
+            {activePopover === 'background' && (
               <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl text-[#172b4d] z-50 overflow-hidden font-sans border border-gray-200">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
                   <span className="font-semibold text-gray-700 text-sm">Background</span>
-                  <button onClick={() => setIsBackgroundMenuOpen(false)} className="text-gray-400 hover:text-gray-600"><MdClose size={18} /></button>
+                  <button onClick={() => setActivePopover(null)} className="text-gray-400 hover:text-gray-600"><MdClose size={18} /></button>
                 </div>
                 <div className="p-3">
                   <div className="grid grid-cols-3 gap-2">
@@ -66,7 +84,7 @@ const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, update
                         key={bgHex}
                         onClick={() => {
                           updateBoardBackground(bgHex);
-                          setIsBackgroundMenuOpen(false);
+                          setActivePopover(null);
                         }}
                         className="h-16 rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm relative group"
                         style={{ backgroundColor: bgHex }}
@@ -79,6 +97,44 @@ const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, update
                       </div>
                     ))}
                   </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-xs font-bold text-[#5e6c84] mb-1">Custom Image URL</label>
+                    <input
+                      type="text"
+                      placeholder="https://..."
+                      value={bgImageUrl}
+                      onChange={(e) => setBgImageUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && bgImageUrl.trim()) {
+                            let formattedUrl = bgImageUrl.trim();
+                            if (!formattedUrl.startsWith('url(')) {
+                                formattedUrl = `url(${formattedUrl})`;
+                            }
+                            updateBoardBackground(formattedUrl);
+                            setBgImageUrl('');
+                            setActivePopover(null);
+                        }
+                      }}
+                      className="w-full px-2 py-1.5 border-2 border-gray-200 hover:border-blue-500 focus:border-blue-500 rounded text-sm focus:outline-none transition-colors"
+                    />
+                    <button 
+                      onClick={() => {
+                         if (bgImageUrl.trim()) {
+                            let formattedUrl = bgImageUrl.trim();
+                            if (!formattedUrl.startsWith('url(')) {
+                                formattedUrl = `url(${formattedUrl})`;
+                            }
+                            updateBoardBackground(formattedUrl);
+                            setBgImageUrl('');
+                            setActivePopover(null);
+                         }
+                      }}
+                      className="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-[#172b4d] py-1.5 rounded text-sm font-medium transition-colors"
+                    >
+                      Apply Image
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -86,14 +142,14 @@ const Navbar = ({ boards, board, fetchBoardsAndActive, handleCreateBoard, update
         )}
 
         <div className="relative">
-          <button onClick={() => setIsCreatingBoard(!isCreatingBoard)} className="bg-white/20 hover:bg-white/30 p-1.5 rounded transition-colors relative">
+          <button onClick={() => setActivePopover(activePopover === 'createBoard' ? null : 'createBoard')} className="bg-white/20 hover:bg-white/30 p-1.5 rounded transition-colors relative">
             <MdAdd size={20} />
           </button>
-          {isCreatingBoard && (
+          {activePopover === 'createBoard' && (
             <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded shadow-xl text-black z-50 p-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-gray-500">Create board</span>
-                <button onClick={() => setIsCreatingBoard(false)} className="text-gray-400 hover:text-gray-600"><MdClose size={16} /></button>
+                <button onClick={() => setActivePopover(null)} className="text-gray-400 hover:text-gray-600"><MdClose size={16} /></button>
               </div>
               <form onSubmit={onSubmitCreate}>
                 <label className="block text-xs font-bold text-[#5e6c84] mb-1">Board title <span className="text-red-500">*</span></label>

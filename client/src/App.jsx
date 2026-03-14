@@ -240,8 +240,12 @@ function App() {
     );
   }
 
+  const appStyle = board.background?.includes('url(') 
+    ? { backgroundImage: board.background, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { backgroundColor: board.background };
+
   return (
-    <div className="h-screen flex flex-col font-sans" style={{ backgroundColor: board.background }}>
+    <div className="h-screen flex flex-col font-sans" style={appStyle}>
       <Navbar
         boards={boards}
         board={board}

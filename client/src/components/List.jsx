@@ -24,6 +24,17 @@ const List = ({ board, setBoard, list, index, refreshBoard, searchQuery = '', fi
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const cardInputRef = React.useRef(null);
+  const menuRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const addCard = async (e) => {
     e?.preventDefault();
@@ -231,20 +242,22 @@ const List = ({ board, setBoard, list, index, refreshBoard, searchQuery = '', fi
                   {list.title}
                 </h2>
               )}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`p-1.5 rounded transition-colors ${isMenuOpen ? 'bg-gray-300 text-gray-800' : 'text-gray-500 hover:bg-[#091e4214] hover:text-gray-800'}`}
-              >
-                <FiMoreHorizontal size={16} />
-              </button>
+              <div ref={menuRef}>
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className={`p-1.5 rounded transition-colors ${isMenuOpen ? 'bg-gray-300 text-gray-800' : 'text-gray-500 hover:bg-[#091e4214] hover:text-gray-800'}`}
+                >
+                  <FiMoreHorizontal size={16} />
+                </button>
 
-              {/* Actions Popover Menu */}
-              <ListOptionsMenu
-                isMenuOpen={isMenuOpen}
-                setIsMenuOpen={setIsMenuOpen}
-                setIsAddingCard={setIsAddingCard}
-                deleteList={deleteList}
-              />
+                {/* Actions Popover Menu */}
+                <ListOptionsMenu
+                  isMenuOpen={isMenuOpen}
+                  setIsMenuOpen={setIsMenuOpen}
+                  setIsAddingCard={setIsAddingCard}
+                  deleteList={deleteList}
+                />
+              </div>
             </div>
 
             {/* List Cards Container */}
