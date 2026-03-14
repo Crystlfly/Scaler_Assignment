@@ -52,7 +52,7 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { title, background } = req.body;
-    const board = await prisma.board.create({
+    const newBoard = await prisma.board.create({
       data: {
         title,
         background: background || "#0079bf",
@@ -65,7 +65,32 @@ router.post("/", async (req, res) => {
         }
       },
     });
-    res.status(201).json(board);
+
+    const fullyPopulatedBoard = await prisma.board.findUnique({
+      where: { id: newBoard.id },
+      include: {
+        lists: {
+          orderBy: { order: "asc" },
+          include: {
+            cards: {
+              orderBy: { order: "asc" },
+              include: {
+                labels: { include: { label: true } },
+                members: { include: { user: true } },
+                checklists: {
+                  include: {
+                    items: { orderBy: { id: "asc" } }
+                  }
+                },
+              },
+            },
+          },
+        },
+        labels: true,
+      },
+    });
+
+    res.status(201).json(fullyPopulatedBoard);
   } catch (error) {
     res.status(500).json({ error: "Failed to create board" });
   }

@@ -88,16 +88,20 @@ function App() {
       const res = await axios.post(`${API_URL}/boards`, { title: title, background: '#0079bf' });
       // Replace temp board with real board silently
       setBoards(prev => prev.map(b => b.id === tempId ? res.data : b));
-      if (board?.id === tempId || !board) setBoard(res.data);
+      // Fix scope issue with functional state to evaluate latest active board
+      setBoard(prev => (prev?.id === tempId || !prev) ? res.data : prev);
       localStorage.setItem('activeBoardId', res.data.id);
     } catch (err) {
       console.error(err);
       // Rollback
       setBoards(prev => prev.filter(b => b.id !== tempId));
-      if (board?.id === tempId) {
-        setBoard(null);
-        localStorage.removeItem('activeBoardId');
-      }
+      setBoard(prev => {
+        if (prev?.id === tempId) {
+          localStorage.removeItem('activeBoardId');
+          return null;
+        }
+        return prev;
+      });
     }
   };
 
