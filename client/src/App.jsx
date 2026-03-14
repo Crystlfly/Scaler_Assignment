@@ -221,7 +221,13 @@ function App() {
     }
   }
 
-  if (loading) return <div className="text-[#172b4d] p-8 h-screen w-screen bg-white">Loading...</div>;
+  if (loading) return (
+    <div className="text-[#172b4d] p-8 h-screen w-screen bg-white">
+      Loading...
+      <br />
+      Instance is starting up. Please refresh or wait for some time...
+    </div>
+  );
 
   if (!board && boards.length === 0) {
     return (
@@ -240,7 +246,7 @@ function App() {
     );
   }
 
-  const appStyle = board.background?.includes('url(') 
+  const appStyle = board.background?.includes('url(')
     ? { backgroundImage: board.background, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { backgroundColor: board.background };
 
